@@ -1,0 +1,19 @@
+<resources>
+    <string name="profile_picture">Profile Picture</string>
+    <string name="abellana_paul">Abellana Paul</string>
+    <string name="bsit_2">BSIT - 2</string>
+    <string name="notifications">Notifications</string>
+    <string name="search">Search</string>
+    <string name="task_manager">Task Manager</string>
+    <string name="basic_mathematics_due_today">Basic Mathematics - Due Today</string>
+    <string name="due_time_0815_am">08:15 AM</string>
+    <string name="expense_tracker">Expense Tracker</string>
+    <string name="total_spent_45">Total Spent: $45.00</string>
+    <string name="progress_tracker">Progress Tracker</string>
+    <string name="pomodoro_timer">Pomodoro Timer</string>
+    <string name="home">Home</string>
+    <string name="tasks">Tasks</string>
+    <string name="progress">Progress</string>
+    <string name="calendar">Calendar</string>
+    <string name="pomodoro">Pomodoro</string>
+</resources>

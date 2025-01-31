@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primaryColor">#6200EE</color> <!-- Primary Button Color -->
+    <color name="secondaryColor">#03DAC5</color> <!-- Secondary Button Color -->
+    <color name="backgroundColor">#F5F5F5</color> <!-- Background Color -->
+    <color name="primaryTextColor">#212121</color> <!-- Main Text Color -->
+    <color name="secondaryTextColor">#757575</color> <!-- Hint Text Color -->
+    <color name="buttonTextColor">#FFFFFF</color> <!-- Button Text Color -->
+    <color name="errorColor">#B00020</color> <!-- Error Text Color -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray">#808080</color>
+    <color name="blue">#007BFF</color>
+</resources>
