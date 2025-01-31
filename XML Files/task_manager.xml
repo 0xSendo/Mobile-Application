@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/backgroundColor"
+    android:gravity="center_horizontal">
+
+    <!-- Task Manager Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Task Manager"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/primaryTextColor"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"/>
+
+    <!-- Subject Name Input -->
+    <EditText
+        android:id="@+id/subjectNameInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Subject Name"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:textColor="@color/primaryTextColor"
+
+        android:layout_marginTop="8dp"
+        android:importantForAccessibility="yes" />
+
+    <!-- Course Code Input -->
+    <EditText
+        android:id="@+id/courseCodeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Course Code"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:textColor="@color/primaryTextColor"
+
+        android:layout_marginTop="16dp"
+        android:importantForAccessibility="yes" />
+
+    <!-- Due Time Input -->
+    <EditText
+        android:id="@+id/dueTimeInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Due Time"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:textColor="@color/primaryTextColor"
+
+        android:layout_marginTop="16dp"
+        android:importantForAccessibility="yes" />
+
+    <!-- Save Button -->
+    <Button
+        android:id="@+id/saveTaskButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Save Task"
+        android:backgroundTint="@color/secondaryColor"
+        android:textColor="@android:color/white"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp"
+        android:textSize="16sp"
+        android:importantForAccessibility="yes"/>
+
+    <!-- Upcoming Tasks Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Upcoming Tasks"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/primaryTextColor"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Task List (Static Example) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:layout_marginTop="8dp"
+        android:elevation="4dp"
+        android:background="@drawable/rounded_card"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Basic Mathematics - Due Today"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/primaryTextColor"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="08:15 AM"
+            android:textSize="14sp"
+            android:textColor="@color/secondaryTextColor"/>
+    </LinearLayout>
+
+</LinearLayout>
