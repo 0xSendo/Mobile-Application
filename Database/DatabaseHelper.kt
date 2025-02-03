@@ -28,29 +28,32 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
+        db?.execSQL("DROP TABLE IF EXISTS $TABLE_USER")
+        db?.execSQL("DROP TABLE IF EXISTS $TABLE_TASK")
+
         val CREATE_USER_TABLE = """
-            CREATE TABLE $TABLE_USER (
-                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
-                $COLUMN_PASSWORD TEXT NOT NULL,
-                $COLUMN_FIRST_NAME TEXT NOT NULL,
-                $COLUMN_LAST_NAME TEXT NOT NULL,
-                $COLUMN_COURSE TEXT NOT NULL,
-                $COLUMN_YEAR_LEVEL TEXT NOT NULL
-            )
-        """
+        CREATE TABLE $TABLE_USER (
+            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
+            $COLUMN_PASSWORD TEXT NOT NULL,
+            $COLUMN_FIRST_NAME TEXT NOT NULL,
+            $COLUMN_LAST_NAME TEXT NOT NULL,
+            $COLUMN_COURSE TEXT NOT NULL,
+            $COLUMN_YEAR_LEVEL TEXT NOT NULL
+        )
+    """
         Log.d("DatabaseHelper", "Executing CREATE_USER_TABLE: $CREATE_USER_TABLE")
         db?.execSQL(CREATE_USER_TABLE)
 
         val CREATE_TASK_TABLE = """
-            CREATE TABLE $TABLE_TASK (
-                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_USERNAME TEXT NOT NULL,
-                $COLUMN_SUBJECT_NAME TEXT NOT NULL,
-                $COLUMN_COURSE_CODE TEXT NOT NULL,
-                $COLUMN_DUE_TIME TEXT NOT NULL
-            )
-        """
+        CREATE TABLE $TABLE_TASK (
+            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_USERNAME TEXT NOT NULL,
+            $COLUMN_SUBJECT_NAME TEXT NOT NULL,
+            $COLUMN_COURSE_CODE TEXT NOT NULL,
+            $COLUMN_DUE_TIME TEXT NOT NULL
+        )
+    """
         Log.d("DatabaseHelper", "Executing CREATE_TASK_TABLE: $CREATE_TASK_TABLE")
         db?.execSQL(CREATE_TASK_TABLE)
     }
@@ -97,14 +100,19 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     fun isUsernameTaken(username: String): Boolean {
         val trimmedUsername = username.trim()
-        if (trimmedUsername.isEmpty()) return true  // Handle empty username cases
+        if (trimmedUsername.isEmpty()) return true // Prevent empty username registration
+
         val db = this.readableDatabase
-        val query = "SELECT * FROM $TABLE_USER WHERE $COLUMN_USERNAME = ? COLLATE NOCASE"
-        val cursor: Cursor = db.rawQuery(query, arrayOf(trimmedUsername))
+        val query = "SELECT COUNT(*) FROM $TABLE_USER WHERE $COLUMN_USERNAME = ? COLLATE NOCASE"
+        val cursor = db.rawQuery(query, arrayOf(trimmedUsername))
 
-        Log.d("DatabaseHelper", "Checking if username '$trimmedUsername' exists. Count: ${cursor.count}")
+        var exists = false
+        if (cursor.moveToFirst()) {
+            exists = cursor.getInt(0) > 0 // If count > 0, username exists
+        }
 
-        val exists = cursor.count > 0
+        Log.d("DatabaseHelper", "Username check for '$trimmedUsername': $exists")
+
         cursor.close()
         return exists
     }
@@ -114,7 +122,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         val query = "SELECT * FROM $TABLE_USER WHERE $COLUMN_USERNAME = ? COLLATE NOCASE"
         val cursor: Cursor = db.rawQuery(query, arrayOf(username.trim()))
         if (cursor.moveToFirst()) {
-            val storedPassword = cursor.getString(cursor.getColumnIndex(COLUMN_PASSWORD))
+            val storedPassword = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PASSWORD))
             val hashedPassword = hashPassword(password)
             cursor.close()
             return storedPassword == hashedPassword
