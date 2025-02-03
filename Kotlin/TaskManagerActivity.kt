@@ -1,8 +1,12 @@
 package com.example.myacademate
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,21 +35,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.SavedStateHandle
 import com.example.myacademate.ui.theme.MyAcademateTheme
 
-data class Task(
-    val id: Int,
-    var subjectName: String,
-    var courseCode: String,
-    var dueTime: String,
-    var isDone: Boolean = false
-)
-
 class TaskManagerActivity : ComponentActivity() {
+    private val taskViewModel: TaskViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -54,7 +55,7 @@ class TaskManagerActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    TaskManagerScreen()
+                    TaskManagerScreen(taskViewModel)
                 }
             }
         }
@@ -62,18 +63,21 @@ class TaskManagerActivity : ComponentActivity() {
 }
 
 @Composable
-fun TaskManagerScreen() {
+fun TaskManagerScreen(taskViewModel: TaskViewModel) {
     var taskName by remember { mutableStateOf("") }
     var courseCode by remember { mutableStateOf("") }
     var dueTime by remember { mutableStateOf("") }
-    var taskList by remember { mutableStateOf(listOf<Task>()) }
-    var editingTaskId by remember { mutableStateOf<Int?>(null) }
-    var filterType by remember { mutableStateOf("Pending") } // Filter state
+    var filterType by remember { mutableStateOf("Pending") }
+
+    // Handle the UI for editing or adding tasks
+    val editingTaskId = taskViewModel.editingTaskId
+    val editingTask = taskViewModel.taskList.find { it.id == editingTaskId }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "Task Manager", style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Input Fields for Task Information (Subject Name, Course Code, Due Time)
         OutlinedTextField(
             value = taskName,
             onValueChange = { taskName = it },
@@ -81,7 +85,6 @@ fun TaskManagerScreen() {
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
-
         OutlinedTextField(
             value = courseCode,
             onValueChange = { courseCode = it },
@@ -89,7 +92,6 @@ fun TaskManagerScreen() {
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
-
         OutlinedTextField(
             value = dueTime,
             onValueChange = { dueTime = it },
@@ -98,118 +100,178 @@ fun TaskManagerScreen() {
         )
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(
-            onClick = {
-                if (taskName.isNotEmpty() && courseCode.isNotEmpty() && dueTime.isNotEmpty()) {
-                    if (editingTaskId == null) {
-                        val newTask = Task(
-                            id = taskList.size + 1,
-                            subjectName = taskName,
-                            courseCode = courseCode,
-                            dueTime = dueTime
-                        )
-                        taskList = taskList + newTask
-                    } else {
-                        val updatedTask = taskList.find { it.id == editingTaskId }
-                        updatedTask?.let {
-                            it.subjectName = taskName
-                            it.courseCode = courseCode
-                            it.dueTime = dueTime
-                        }
-                    }
-                    taskName = ""
-                    courseCode = ""
-                    dueTime = ""
-                    editingTaskId = null
+        // Save or Update Task Button
+        Button(onClick = {
+            if (taskName.isNotEmpty() && courseCode.isNotEmpty() && dueTime.isNotEmpty()) {
+                val newTask = Task(
+                    id = taskViewModel.taskList.size + 1,
+                    subjectName = taskName,
+                    courseCode = courseCode,
+                    dueTime = dueTime
+                )
+                if (editingTask == null) {
+                    taskViewModel.addTask(newTask)
+                } else {
+                    taskViewModel.updateTask(newTask)
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = if (editingTaskId == null) "Save Task" else "Update Task")
+                taskName = ""
+                courseCode = ""
+                dueTime = ""
+                taskViewModel.clearEditingTask()
+            }
+        }, modifier = Modifier.fillMaxWidth()) {
+            Text(text = if (editingTask == null) "Save Task" else "Update Task")
         }
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Row with "Upcoming Tasks" Text and Filter Button
+        // Filter Tasks
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(text = "Upcoming Tasks", style = MaterialTheme.typography.bodyMedium)
-
+            Text(text = "Filter Tasks", style = MaterialTheme.typography.bodyMedium)
             var expanded by remember { mutableStateOf(false) }
             Box {
                 Button(onClick = { expanded = true }) {
                     Text("Filter: $filterType")
                 }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    DropdownMenuItem(text = { Text("Pending") }, onClick = { filterType = "Pending"; expanded = false })
-                    DropdownMenuItem(text = { Text("Finished") }, onClick = { filterType = "Finished"; expanded = false })
-                    DropdownMenuItem(text = { Text("Closest Deadline") }, onClick = { filterType = "Closest Deadline"; expanded = false })
-                    DropdownMenuItem(text = { Text("Farthest Deadline") }, onClick = { filterType = "Farthest Deadline"; expanded = false })
+                    DropdownMenuItem(text = { Text("Pending") }, onClick = {
+                        filterType = "Pending"
+                        expanded = false
+                    })
+                    DropdownMenuItem(text = { Text("Finished") }, onClick = {
+                        filterType = "Finished"
+                        expanded = false
+                    })
+                    DropdownMenuItem(text = { Text("Closest Deadline") }, onClick = {
+                        filterType = "Closest Deadline"
+                        expanded = false
+                    })
+                    DropdownMenuItem(text = { Text("Farthest Deadline") }, onClick = {
+                        filterType = "Farthest Deadline"
+                        expanded = false
+                    })
+                    DropdownMenuItem(text = { Text("A-Z") }, onClick = {
+                        filterType = "A-Z"
+                        expanded = false
+                    })
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
+        // Apply filtering logic
         val filteredTasks = when (filterType) {
-            "Pending" -> taskList.filter { !it.isDone }
-            "Finished" -> taskList.filter { it.isDone }
-            "Closest Deadline" -> taskList.sortedBy { it.dueTime }
-            "Farthest Deadline" -> taskList.sortedByDescending { it.dueTime }
-            else -> taskList
+            "Pending" -> taskViewModel.taskList.filter { !it.isDone }
+            "Finished" -> taskViewModel.taskList.filter { it.isDone }
+            "Closest Deadline" -> taskViewModel.taskList.sortedBy { it.dueTime }
+            "Farthest Deadline" -> taskViewModel.taskList.sortedByDescending { it.dueTime }
+            "A-Z" -> taskViewModel.taskList.sortedBy { it.subjectName }
+            else -> taskViewModel.taskList
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Task List Section
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(filteredTasks) { task ->
-                TaskCard(task, onUpdateTask = { updatedTask ->
-                    taskList = taskList.map { if (it.id == updatedTask.id) updatedTask else it }
-                }, onDeleteTask = {
-                    taskList = taskList.filter { it.id != task.id }
-                })
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(text = task.subjectName, style = MaterialTheme.typography.bodyLarge)
+                        Text(text = "Course: ${task.courseCode}", style = MaterialTheme.typography.bodyMedium)
+                        Text(text = "Due: ${task.dueTime}", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Mark as done icon
+                            IconButton(onClick = {
+                                taskViewModel.toggleTaskStatus(task.id)
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = if (task.isDone) R.drawable.ic_markdone else R.drawable.ic_markdone),
+                                    contentDescription = "Mark as Done", modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            // Edit icon
+                            IconButton(onClick = {
+                                taskViewModel.startEditingTask(task.id)
+                                taskName = task.subjectName
+                                courseCode = task.courseCode
+                                dueTime = task.dueTime
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_edit),
+                                    contentDescription = "Edit Task",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            // Remove task icon
+                            IconButton(onClick = {
+                                taskViewModel.deleteTask(task.id)
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_delete),
+                                    contentDescription = "Remove Task",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        val context = LocalContext.current
+
+        val menuItems = listOf(
+            Pair(R.drawable.ic_home, "Home") to {
+                val intent = Intent(context, HomeActivity::class.java)
+                context.startActivity(intent)
+            },
+            Pair(R.drawable.ic_tasks, "Tasks") to {
+                // No action needed as you are already in Task Manager
+            },
+            Pair(R.drawable.ic_progress, "Progress") to {
+                val intent = Intent(context, ProgressTrackerActivity::class.java)
+                context.startActivity(intent)
+            },
+            Pair(R.drawable.ic_pomodoro, "Pomodoro") to {
+                // Pomodoro button action (optional)
+            },
+            Pair(R.drawable.ic_calendar, "Calendar") to {
+                // Calendar button action (optional)
+            }
+        )
+
+        // Bottom Navigation Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)  // Increased height for better visibility
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            menuItems.forEach { (icon, action) ->
+                Image(
+                    painter = painterResource(id = icon.first),
+                    contentDescription = icon.second,
+                    modifier = Modifier
+                        .weight(1f)
+                        .size(80.dp)  // Increased size for better visibility
+                        .clickable { action() }
+                )
             }
         }
     }
 }
 
-@Composable
-fun TaskCard(task: Task, onUpdateTask: (Task) -> Unit, onDeleteTask: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = task.subjectName, style = MaterialTheme.typography.bodyLarge)
-            Text(text = "Course: ${task.courseCode}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Due: ${task.dueTime}", style = MaterialTheme.typography.bodyMedium)
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                IconButton(onClick = {
-                    onUpdateTask(task.copy(isDone = !task.isDone))
-                }) {
-                    Icon(
-                        painter = painterResource(id = if (task.isDone) R.drawable.ic_markdone else R.drawable.ic_markdone),
-                        contentDescription = "Mark as Done",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                IconButton(onClick = onDeleteTask) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_delete),
-                        contentDescription = "Remove Task",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
 fun TaskManagerScreenPreview() {
     MyAcademateTheme {
-        TaskManagerScreen()
+        TaskManagerScreen(taskViewModel = TaskViewModel(SavedStateHandle()))
     }
 }
