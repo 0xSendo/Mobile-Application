@@ -2,6 +2,7 @@ package com.example.myacademate
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -31,20 +32,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val username = intent.getStringExtra("USERNAME") ?: ""
+        Log.d("HomeActivity", "Username received: $username")
+
+        val dbHelper = DatabaseHelper(applicationContext)
+
+        // Fetch user data for debugging
+        val user = dbHelper.getUserData(username)
+        Log.d("HomeActivity", "User data fetched in HomeActivity: $user")
+
         setContent {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    HomeScreen()
+                    HomeScreen(username, dbHelper)
                 }
             }
         }
@@ -52,18 +62,32 @@ class HomeActivity : ComponentActivity() {
 }
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(username: String, dbHelper: DatabaseHelper) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
 
+    // Fetch user data from the database
+    val user = dbHelper.getUserData(username)
+
+    // Handle null or missing user data safely by providing fallback values
+    val firstName = user?.firstName ?: "Unknown"
+    val lastName = user?.lastName ?: "User"
+    val course = user?.course ?: "N/A"
+    val yearLevel = user?.yearLevel ?: "N/A"
+
     Column(modifier = Modifier.padding(16.dp)) {
-        // Profile Section (Clickable to Navigate to ProfileActivity)
+        // Profile Section
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
                     val intent = Intent(context, ProfileActivity::class.java)
+                    intent.putExtra("USERNAME", username)
+                    intent.putExtra("FIRST_NAME", firstName)
+                    intent.putExtra("LAST_NAME", lastName)
+                    intent.putExtra("COURSE", course)
+                    intent.putExtra("YEAR_LEVEL", yearLevel)
                     context.startActivity(intent)
                 }
         ) {
@@ -74,8 +98,15 @@ fun HomeScreen() {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Column {
-                Text(text = "Abellana Paul", style = MaterialTheme.typography.bodyLarge)
-                Text(text = "BSIT - 2", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = "$firstName $lastName",  // Display the name with fallback
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Text(
+                    text = "$course - $yearLevel",  // Display course and year level with fallback
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
             Image(
@@ -111,85 +142,39 @@ fun HomeScreen() {
         Spacer(modifier = Modifier.height(20.dp))
         Text(text = "Expense Tracker", style = MaterialTheme.typography.titleLarge)
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = "Total Spent: $45.00", style = MaterialTheme.typography.bodyLarge)
+                /* Text(text = "Total Spent: $$totalSpent", style = MaterialTheme.typography.bodyLarge)*/
             }
         }
 
-        // Fixed Bottom Navigation
+        // Bottom Navigation
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .padding(top = 16.dp),
+            modifier = Modifier.fillMaxWidth().height(80.dp).padding(top = 16.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_home),
-                contentDescription = "Home",
-                modifier = Modifier
-                    .weight(1f)
-                    .size(60.dp)
-                    .clickable {
-                        // Handle Home button click
-                    }
-            )
-            Image(
-                painter = painterResource(id = R.drawable.ic_tasks),
-                contentDescription = "Tasks",
-                modifier = Modifier
-                    .weight(1f)
-                    .size(60.dp)
-                    .clickable {
-                        val intent = Intent(context, TaskManagerActivity::class.java)
-                        context.startActivity(intent)  // Navigate to TaskManagerActivity
-                    }
-            )
-            Image(
-                painter = painterResource(id = R.drawable.ic_progress),
-                contentDescription = "Progress",
-                modifier = Modifier
-                    .weight(1f)
-                    .size(60.dp)
-                    .clickable {
-                        val intent = Intent(context, ProgressTrackerActivity::class.java)  // Navigate to ProgressTrackerActivity
-                        context.startActivity(intent)
-                    }
-            )
-            Image(
-                painter = painterResource(id = R.drawable.ic_pomodoro),
-                contentDescription = "Pomodoro",
-                modifier = Modifier
-                    .weight(1f)
-                    .size(60.dp)
-                    .clickable {
-                        // Handle Pomodoro button click
-                    }
-            )
-            Image(
-                painter = painterResource(id = R.drawable.ic_calendar),
-                contentDescription = "Calendar",
-                modifier = Modifier
-                    .weight(1f)
-                    .size(60.dp)
-                    .clickable {
-                        // Handle Calendar button click
-                    }
-            )
+            listOf(
+                Pair(R.drawable.ic_home, "Home") to {},
+                Pair(R.drawable.ic_tasks, "Tasks") to {
+                    val intent = Intent(context, TaskManagerActivity::class.java)
+                    context.startActivity(intent)
+                },
+                Pair(R.drawable.ic_progress, "Progress") to {
+                    val intent = Intent(context, ProgressTrackerActivity::class.java)
+                    context.startActivity(intent)
+                },
+                Pair(R.drawable.ic_pomodoro, "Pomodoro") to {},
+                Pair(R.drawable.ic_calendar, "Calendar") to {}
+            ).forEach { (icon, action) ->
+                Image(
+                    painter = painterResource(id = icon.first),
+                    contentDescription = icon.second,
+                    modifier = Modifier.weight(1f).size(60.dp).clickable { action() }
+                )
+            }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    MyAcademateTheme {
-        HomeScreen()
     }
 }
