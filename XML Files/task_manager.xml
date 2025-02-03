@@ -27,7 +27,6 @@
         android:textSize="16sp"
         android:padding="12dp"
         android:textColor="@color/primaryTextColor"
-
         android:layout_marginTop="8dp"
         android:importantForAccessibility="yes" />
 
@@ -40,7 +39,6 @@
         android:textSize="16sp"
         android:padding="12dp"
         android:textColor="@color/primaryTextColor"
-
         android:layout_marginTop="16dp"
         android:importantForAccessibility="yes" />
 
@@ -53,9 +51,10 @@
         android:textSize="16sp"
         android:padding="12dp"
         android:textColor="@color/primaryTextColor"
-
+        android:focusable="true"
+        android:clickable="true"
         android:layout_marginTop="16dp"
-        android:importantForAccessibility="yes" />
+        android:importantForAccessibility="yes"/>
 
     <!-- Save Button -->
     <Button
@@ -108,5 +107,80 @@
             android:textSize="14sp"
             android:textColor="@color/secondaryTextColor"/>
     </LinearLayout>
+
+    <!-- Bottom Navigation -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@color/white"
+        android:elevation="8dp"
+        android:layout_marginTop="1dp"
+        android:weightSum="5"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true">
+
+
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_home"
+        android:contentDescription="@string/home"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:clickable="true"
+        android:focusable="true"
+        android:onClick="onHomeClick"/>
+
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_tasks"
+        android:contentDescription="@string/tasks"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:clickable="true"
+        android:focusable="true"
+        android:onClick="onTasksClick"/>
+
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_progress"
+        android:contentDescription="@string/progress"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:clickable="true"
+        android:focusable="true"
+        android:onClick="onProgressClick"/>
+    <!-- Pomodoro Timer Icon -->
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_pomodoro"
+        android:contentDescription="@string/pomodoro"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:clickable="true"
+        android:focusable="true"
+        android:onClick="onPomodoroClick"/>
+    <!-- Calendar Icon -->
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_weight="1"
+        android:src="@drawable/ic_calendar"
+        android:contentDescription="@string/calendar"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:clickable="true"
+        android:focusable="true"
+        android:onClick="onCalendarClick"/>
+</LinearLayout>
 
 </LinearLayout>
