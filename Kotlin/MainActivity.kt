@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -29,6 +31,7 @@ import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var dbHelper: DatabaseHelper
+    private val taskViewModel: TaskViewModel by viewModels() // Initialize ViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +62,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -68,6 +72,7 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -95,18 +100,24 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = {
-                if (dbHelper.checkUserCredentials(username, password)) {
-                    onLoginSuccess()
-                } else {
-                    errorMessage = "Invalid credentials. Try again."
-                    Log.e("LoginActivity", "Failed login attempt: $username")  // Log failure
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(text = "Login")
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.fillMaxWidth())
+        } else {
+            Button(
+                onClick = {
+                    isLoading = true
+                    if (dbHelper.checkUserCredentials(username, password)) {
+                        onLoginSuccess()
+                    } else {
+                        errorMessage = "Invalid credentials. Try again."
+                        Log.e("LoginActivity", "Failed login attempt: $username")
+                    }
+                    isLoading = false
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(text = "Login")
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Button(
@@ -125,3 +136,4 @@ fun LoginScreen(
         }
     }
 }
+
