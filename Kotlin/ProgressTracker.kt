@@ -3,80 +3,63 @@ package com.example.myacademate
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class ProgressTrackerActivity : ComponentActivity() {
+    private val taskViewModel: TaskViewModel by viewModels {
+        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val username = intent.getStringExtra("username") ?: "default_user"
+        taskViewModel.loadTasks(username)
+
         setContent {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ProgressTrackerScreen()
+                    ProgressTrackerScreen(taskViewModel)
                 }
             }
         }
     }
 }
 
+
 @Composable
-fun ProgressTrackerScreen() {
-    var progressList by remember { mutableStateOf(listOf<String>()) }
-    var taskName by remember { mutableStateOf("") }
-    var progressStatus by remember { mutableStateOf("") }
+fun ProgressTrackerScreen(viewModel: TaskViewModel) {
+    val taskList = viewModel.taskList // Get the tasks from ViewModel
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "Progress Tracker", style = MaterialTheme.typography.titleLarge)
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        OutlinedTextField(
-            value = taskName,
-            onValueChange = { taskName = it },
-            label = { Text("Task Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = progressStatus,
-            onValueChange = { progressStatus = it },
-            label = { Text("Progress Status") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = {
-                if (taskName.isNotEmpty() && progressStatus.isNotEmpty()) {
-                    progressList = progressList + "$taskName - $progressStatus"
-                    taskName = ""
-                    progressStatus = ""
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Add Progress")
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Text(text = "Progress List", style = MaterialTheme.typography.bodyMedium)
+        Text(text = "Task Progress", style = MaterialTheme.typography.bodyMedium)
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        if (progressList.isNotEmpty()) {
-            progressList.forEach { progress ->
+        if (taskList.isNotEmpty()) {
+            taskList.forEach { task ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -84,20 +67,18 @@ fun ProgressTrackerScreen() {
                     elevation = CardDefaults.cardElevation(4.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(text = progress, style = MaterialTheme.typography.bodyLarge)
+                        Text(text = "${task.subjectName} (${task.courseCode})", style = MaterialTheme.typography.bodyLarge)
+                        Text(text = "Due: ${task.dueTime}", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = if (task.isDone) "Status: Completed ✅" else "Status: In Progress ⏳",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
         } else {
-            Text("No progress available", style = MaterialTheme.typography.bodyMedium)
+            Text("No tasks available", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ProgressTrackerScreenPreview() {
-    MyAcademateTheme {
-        ProgressTrackerScreen()
-    }
-}
