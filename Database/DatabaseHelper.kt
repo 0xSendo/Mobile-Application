@@ -25,46 +25,46 @@
             private const val COLUMN_SUBJECT_NAME = "subject_name"
             private const val COLUMN_COURSE_CODE = "course_code"
             private const val COLUMN_DUE_TIME = "due_time"
-            private const val  COLUMN_BIRTHDATE = "birthdate"
+            private const val COLUMN_BIRTHDATE = "birthdate"
+            private const val COLUMN_IS_DONE = "is_done" // New column for task completion
         }
 
-        override fun onCreate(db: SQLiteDatabase?) {
-            db?.execSQL("DROP TABLE IF EXISTS $TABLE_USER")
-            db?.execSQL("DROP TABLE IF EXISTS $TABLE_TASK")
 
-            val CREATE_USER_TABLE = """
-    CREATE TABLE $TABLE_USER (
-    $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-    $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
-    $COLUMN_PASSWORD TEXT NOT NULL,
-    $COLUMN_FIRST_NAME TEXT NOT NULL,
-    $COLUMN_LAST_NAME TEXT NOT NULL,
-    $COLUMN_COURSE TEXT NOT NULL,
-    $COLUMN_YEAR_LEVEL TEXT NOT NULL,
-    birthdate TEXT NOT NULL
-)
-"""
-            Log.d("DatabaseHelper", "Executing CREATE_USER_TABLE: $CREATE_USER_TABLE")
-            db?.execSQL(CREATE_USER_TABLE)
+        override fun onCreate(db: SQLiteDatabase?) {
+            val createUserTable = """
+            CREATE TABLE $TABLE_USER (
+                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
+                $COLUMN_PASSWORD TEXT NOT NULL,
+                $COLUMN_FIRST_NAME TEXT NOT NULL,
+                $COLUMN_LAST_NAME TEXT NOT NULL,
+                $COLUMN_COURSE TEXT NOT NULL,
+                $COLUMN_YEAR_LEVEL TEXT NOT NULL,
+                $COLUMN_BIRTHDATE TEXT NOT NULL
+            )
+        """
+            db?.execSQL(createUserTable)
 
 
             val CREATE_TASK_TABLE = """
-        CREATE TABLE $TABLE_TASK (
-            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            $COLUMN_USERNAME TEXT NOT NULL,
-            $COLUMN_SUBJECT_NAME TEXT NOT NULL,
-            $COLUMN_COURSE_CODE TEXT NOT NULL,
-            $COLUMN_DUE_TIME TEXT NOT NULL
+            CREATE TABLE $TABLE_TASK (
+                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+                $COLUMN_USERNAME TEXT NOT NULL,
+                $COLUMN_SUBJECT_NAME TEXT NOT NULL,
+                $COLUMN_COURSE_CODE TEXT NOT NULL,
+                $COLUMN_DUE_TIME TEXT NOT NULL,
+                $COLUMN_IS_DONE INTEGER DEFAULT 0, 
+                FOREIGN KEY ($COLUMN_USERNAME) REFERENCES $TABLE_USER($COLUMN_USERNAME) ON DELETE CASCADE
         )
     """
             Log.d("DatabaseHelper", "Executing CREATE_TASK_TABLE: $CREATE_TASK_TABLE")
             db?.execSQL(CREATE_TASK_TABLE)
         }
-    
+
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
             if (oldVersion < newVersion) {
-                db?.execSQL("DROP TABLE IF EXISTS $TABLE_USER")
                 db?.execSQL("DROP TABLE IF EXISTS $TABLE_TASK")
+                db?.execSQL("DROP TABLE IF EXISTS $TABLE_USER")
                 onCreate(db)
             }
         }
@@ -212,33 +212,57 @@
 
         fun addTask(username: String, subjectName: String, courseCode: String, dueTime: String): Long {
             val db = writableDatabase
-    
             val contentValues = ContentValues().apply {
                 put(COLUMN_USERNAME, username.trim())
                 put(COLUMN_SUBJECT_NAME, subjectName)
                 put(COLUMN_COURSE_CODE, courseCode)
                 put(COLUMN_DUE_TIME, dueTime)
             }
-    
             return db.insert(TABLE_TASK, null, contentValues)
         }
 
-        /*fun getUserTasks(username: String): List<Task> {
+        fun getUserTasks(username: String): List<Task> {
             val db = this.readableDatabase
             val taskList = mutableListOf<Task>()
             val query = "SELECT * FROM $TABLE_TASK WHERE $COLUMN_USERNAME = ? COLLATE NOCASE"
             val cursor: Cursor = db.rawQuery(query, arrayOf(username.trim()))
-    
+
             while (cursor.moveToNext()) {
-                val subjectName = cursor.getString(cursor.getColumnIndex(COLUMN_SUBJECT_NAME))
-                val courseCode = cursor.getString(cursor.getColumnIndex(COLUMN_COURSE_CODE))
-                val dueTime = cursor.getString(cursor.getColumnIndex(COLUMN_DUE_TIME))
-                taskList.add(Task(subjectName, courseCode, dueTime))
+                val id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID))
+                val subjectName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SUBJECT_NAME))
+                val courseCode = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COURSE_CODE))
+                val dueTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DUE_TIME))
+                val isDone = cursor.getInt(cursor.getColumnIndexOrThrow("is_done")) == 1
+                taskList.add(Task(id, subjectName, courseCode, dueTime, isDone))
             }
             cursor.close()
             return taskList
-        }*/
+        }
 
+        fun updateTask(task: Task): Int {
+            val db = writableDatabase
+            val contentValues = ContentValues().apply {
+                put(COLUMN_SUBJECT_NAME, task.subjectName)
+                put(COLUMN_COURSE_CODE, task.courseCode)
+                put(COLUMN_DUE_TIME, task.dueTime)
+                put("is_done", if (task.isDone) 1 else 0)
+            }
+            return db.update(TABLE_TASK, contentValues, "$COLUMN_ID=?", arrayOf(task.id.toString()))
+        }
+
+        // Delete a task by ID
+        fun deleteTask(taskId: Int): Int {
+            val db = writableDatabase
+            return db.delete(TABLE_TASK, "$COLUMN_ID=?", arrayOf(taskId.toString()))
+        }
+
+        fun toggleTaskStatus(taskId: Int, isDone: Boolean): Int {
+            val db = writableDatabase
+            val contentValues = ContentValues().apply {
+                put("is_done", if (isDone) 1 else 0)
+            }
+            return db.update(TABLE_TASK, contentValues, "$COLUMN_ID=?", arrayOf(taskId.toString()))
+        }
 
         data class User(
             val id: Int,
@@ -251,5 +275,12 @@
         )
 
 
-        data class Task(val subjectName: String, val courseCode: String, val dueTime: String)
+        data class Task(
+            val id: Int,
+            val subjectName: String,
+            val courseCode: String,
+            val dueTime: String,
+            val isDone: Boolean = false
+        )
     }
+
