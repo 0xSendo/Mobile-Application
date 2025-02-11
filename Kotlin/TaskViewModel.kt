@@ -1,22 +1,17 @@
 package com.example.myacademate
 
+import android.app.Application
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
-// Data class for representing a Task
-data class Task(
-    val id: Int,
-    var subjectName: String,
-    var courseCode: String,
-    var dueTime: String,
-    var isDone: Boolean = false
-)
+class TaskViewModel(application: Application) : AndroidViewModel(application) {
+    private val databaseHelper = DatabaseHelper(application)
 
-class TaskViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     // Mutable state to hold the list of tasks
-    private val _taskList = mutableStateOf(savedStateHandle.get<List<Task>>("taskList") ?: emptyList())
-    val taskList: List<Task>
+    private val _taskList = mutableStateOf<List<DatabaseHelper.Task>>(emptyList())
+    val taskList: List<DatabaseHelper.Task>
         get() = _taskList.value
 
     // ID for the task being edited
@@ -24,32 +19,43 @@ class TaskViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel(
     val editingTaskId: Int?
         get() = _editingTaskId.value
 
+    // Load tasks from the database
+    fun loadTasks(username: String) {
+        viewModelScope.launch {
+            _taskList.value = databaseHelper.getUserTasks(username)
+        }
+    }
+
     // Add a new task
-    fun addTask(task: Task) {
-        _taskList.value = _taskList.value + task
-        savedStateHandle["taskList"] = _taskList.value
+    fun addTask(username: String, task: DatabaseHelper.Task) {
+        viewModelScope.launch {
+            databaseHelper.addTask(username, task.subjectName, task.courseCode, task.dueTime)
+            loadTasks(username) // Refresh the task list
+        }
     }
 
     // Update an existing task
-    fun updateTask(updatedTask: Task) {
-        _taskList.value = _taskList.value.map {
-            if (it.id == updatedTask.id) updatedTask else it
+    fun updateTask(username: String, updatedTask: DatabaseHelper.Task) {
+        viewModelScope.launch {
+            databaseHelper.updateTask(updatedTask)
+            loadTasks(username) // Refresh the task list
         }
-        savedStateHandle["taskList"] = _taskList.value
     }
 
     // Delete a task by ID
-    fun deleteTask(taskId: Int) {
-        _taskList.value = _taskList.value.filter { it.id != taskId }
-        savedStateHandle["taskList"] = _taskList.value
+    fun deleteTask(username: String, taskId: Int) {
+        viewModelScope.launch {
+            databaseHelper.deleteTask(taskId)
+            loadTasks(username) // Refresh the task list
+        }
     }
 
     // Toggle task completion status
-    fun toggleTaskStatus(taskId: Int) {
-        _taskList.value = _taskList.value.map {
-            if (it.id == taskId) it.copy(isDone = !it.isDone) else it
+    fun toggleTaskStatus(username: String, taskId: Int, isDone: Boolean) {
+        viewModelScope.launch {
+            databaseHelper.toggleTaskStatus(taskId, isDone)
+            loadTasks(username) // Refresh the task list
         }
-        savedStateHandle["taskList"] = _taskList.value
     }
 
     // Start editing a task
