@@ -7,9 +7,9 @@
     import android.database.sqlite.SQLiteOpenHelper
     import android.util.Log
     import java.security.MessageDigest
-    
+
     class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
-    
+
         companion object {
             private const val DATABASE_NAME = "academate.db"
             private const val DATABASE_VERSION = 1
@@ -25,6 +25,7 @@
             private const val COLUMN_SUBJECT_NAME = "subject_name"
             private const val COLUMN_COURSE_CODE = "course_code"
             private const val COLUMN_DUE_TIME = "due_time"
+            private const val  COLUMN_BIRTHDATE = "birthdate"
         }
 
         override fun onCreate(db: SQLiteDatabase?) {
@@ -32,18 +33,20 @@
             db?.execSQL("DROP TABLE IF EXISTS $TABLE_TASK")
 
             val CREATE_USER_TABLE = """
-        CREATE TABLE $TABLE_USER (
-            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
-            $COLUMN_PASSWORD TEXT NOT NULL,
-            $COLUMN_FIRST_NAME TEXT NOT NULL,
-            $COLUMN_LAST_NAME TEXT NOT NULL,
-            $COLUMN_COURSE TEXT NOT NULL,
-            $COLUMN_YEAR_LEVEL TEXT NOT NULL
-        )
-    """
+    CREATE TABLE $TABLE_USER (
+    $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
+    $COLUMN_PASSWORD TEXT NOT NULL,
+    $COLUMN_FIRST_NAME TEXT NOT NULL,
+    $COLUMN_LAST_NAME TEXT NOT NULL,
+    $COLUMN_COURSE TEXT NOT NULL,
+    $COLUMN_YEAR_LEVEL TEXT NOT NULL,
+    birthdate TEXT NOT NULL
+)
+"""
             Log.d("DatabaseHelper", "Executing CREATE_USER_TABLE: $CREATE_USER_TABLE")
             db?.execSQL(CREATE_USER_TABLE)
+
 
             val CREATE_TASK_TABLE = """
         CREATE TABLE $TABLE_TASK (
@@ -72,18 +75,18 @@
             val digest = md.digest(bytes)
             return digest.fold("") { str, it -> str + "%02x".format(it) }
         }
-    
-        fun addUser(firstName: String, lastName: String, course: String, yearLevel: String, username: String, password: String): Long {
+
+        fun addUser(firstName: String, lastName: String, course: String, yearLevel: String, username: String, password: String, birthdate: String): Long {
             val db = writableDatabase
             val hashedPassword = hashPassword(password)
             val trimmedUsername = username.trim()
-    
+
             // Check if the username is already taken
             if (isUsernameTaken(trimmedUsername)) {
                 Log.d("DatabaseHelper", "Username '$trimmedUsername' is already taken.")
                 return -1L
             }
-    
+
             val contentValues = ContentValues().apply {
                 put(COLUMN_FIRST_NAME, firstName)
                 put(COLUMN_LAST_NAME, lastName)
@@ -91,13 +94,24 @@
                 put(COLUMN_YEAR_LEVEL, yearLevel)
                 put(COLUMN_USERNAME, trimmedUsername)
                 put(COLUMN_PASSWORD, hashedPassword)
+                put("birthdate", birthdate)  // Inserting birthdate here
             }
-    
+
             val result = db.insert(TABLE_USER, null, contentValues)
             Log.d("DatabaseHelper", "Insertion result for username '$trimmedUsername': $result")
             return result
         }
-    
+
+
+
+        fun deleteUser(username: String): Boolean {
+            val db = this.writableDatabase
+            val result = db.delete(TABLE_USER, "$COLUMN_USERNAME=?", arrayOf(username))
+            db.close()
+            return result > 0
+        }
+
+
         fun isUsernameTaken(username: String): Boolean {
             val trimmedUsername = username.trim()
             if (trimmedUsername.isEmpty()) return true // Prevent empty username registration
@@ -116,7 +130,30 @@
             cursor.close()
             return exists
         }
-    
+
+        fun updateUser(id: Int, firstName: String, lastName: String, course: String, yearLevel: String, birthdate: String?): Boolean {
+            val db = this.writableDatabase
+            val contentValues = ContentValues().apply {
+                put(COLUMN_FIRST_NAME, firstName)
+                put(COLUMN_LAST_NAME, lastName)
+                put(COLUMN_COURSE, course)
+                put(COLUMN_YEAR_LEVEL, yearLevel)
+                if (birthdate != null) {
+                    put("birthdate", birthdate)
+                } else {
+                    put("birthdate", "")  // Optionally set null or empty string if birthdate is null
+                }
+            }
+            val result = db.update(TABLE_USER, contentValues, "$COLUMN_ID=?", arrayOf(id.toString()))
+            db.close()
+            return result > 0
+        }
+
+
+
+
+
+
         fun checkUserCredentials(username: String, password: String): Boolean {
             val db = this.readableDatabase
             val query = "SELECT * FROM $TABLE_USER WHERE $COLUMN_USERNAME = ? COLLATE NOCASE"
@@ -133,7 +170,8 @@
 
         fun getUserData(username: String): User? {
             val db = this.readableDatabase
-            val cursor: Cursor = db.rawQuery("SELECT * FROM $TABLE_USER WHERE $COLUMN_USERNAME = ?", arrayOf(username))
+            val trimmedUsername = username.trim()
+            val cursor: Cursor = db.rawQuery("SELECT * FROM $TABLE_USER WHERE $COLUMN_USERNAME = ?", arrayOf(trimmedUsername))
 
             var user: User? = null
             if (cursor.moveToFirst()) {
@@ -143,21 +181,31 @@
                 val lastNameIndex = cursor.getColumnIndex(COLUMN_LAST_NAME)
                 val courseIndex = cursor.getColumnIndex(COLUMN_COURSE)
                 val yearLevelIndex = cursor.getColumnIndex(COLUMN_YEAR_LEVEL)
+                val birthdateIndex = cursor.getColumnIndex("birthdate")
 
-                if (idIndex != -1 && usernameIndex != -1 && firstNameIndex != -1 && lastNameIndex != -1 && courseIndex != -1 && yearLevelIndex != -1) {
+                if (idIndex != -1 && usernameIndex != -1 && firstNameIndex != -1 &&
+                    lastNameIndex != -1 && courseIndex != -1 && yearLevelIndex != -1 && birthdateIndex != -1) {
+
                     user = User(
                         id = cursor.getInt(idIndex),
                         username = cursor.getString(usernameIndex),
                         firstName = cursor.getString(firstNameIndex),
                         lastName = cursor.getString(lastNameIndex),
                         course = cursor.getString(courseIndex),
-                        yearLevel = cursor.getString(yearLevelIndex)
+                        yearLevel = cursor.getString(yearLevelIndex),
+                        birthdate = cursor.getString(birthdateIndex)
                     )
+                    Log.d("DatabaseHelper", "Fetched User: $user")
+                } else {
+                    Log.e("DatabaseHelper", "One or more column indices not found")
                 }
+            } else {
+                Log.e("DatabaseHelper", "No user found for username: $trimmedUsername")
             }
             cursor.close()
             return user
         }
+
 
 
 
@@ -175,7 +223,7 @@
             return db.insert(TABLE_TASK, null, contentValues)
         }
 
-        fun getUserTasks(username: String): List<Task> {
+        /*fun getUserTasks(username: String): List<Task> {
             val db = this.readableDatabase
             val taskList = mutableListOf<Task>()
             val query = "SELECT * FROM $TABLE_TASK WHERE $COLUMN_USERNAME = ? COLLATE NOCASE"
@@ -189,17 +237,19 @@
             }
             cursor.close()
             return taskList
-        }
-    
+        }*/
+
+
         data class User(
             val id: Int,
             val username: String,
             val firstName: String,
             val lastName: String,
             val course: String,
-            val yearLevel: String
+            val yearLevel: String,
+            val birthdate: String // Add birthdate here
         )
-    
-    
+
+
         data class Task(val subjectName: String, val courseCode: String, val dueTime: String)
     }
