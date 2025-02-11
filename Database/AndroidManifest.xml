@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyAcademate"
+        tools:targetApi="31">
+
+        <!-- Login Activity (Launcher) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyAcademate">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Register Activity -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="true"
+            android:label="Register"
+            android:theme="@style/Theme.MyAcademate" />
+
+        <!-- Home Activity -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true"
+            android:label="Home"
+            android:theme="@style/Theme.MyAcademate" />
+
+        <!-- Profile Activity -->
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="true"
+            android:label="Profile"
+            android:theme="@style/Theme.MyAcademate" />
+
+        <!-- Task Manager -->
+        <activity android:name=".TaskManagerActivity"
+            android:label="Task Manager"
+            android:exported="true"
+            android:theme="@style/Theme.MyAcademate">
+        </activity>
+
+        <activity
+            android:name=".ProgressTrackerActivity"
+            android:label="Progress Tracker"
+            android:theme="@style/Theme.MyAcademate"
+            android:exported="true" />
+
+        <activity
+            android:name=".TaskRepository"
+            android:label="Task Repository"
+            android:theme="@style/Theme.MyAcademate"
+            android:exported="true" />
+
+        <activity
+            android:name=".PomodoroActivity"
+            android:label="Pomodoro"
+            android:theme="@style/Theme.MyAcademate"
+            android:exported="true" />
+
+
+    </application>
+
+</manifest>
