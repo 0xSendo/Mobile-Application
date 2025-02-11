@@ -1,6 +1,8 @@
 package com.example.myacademate
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -26,21 +28,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val dbHelper = DatabaseHelper(applicationContext)
+        val username = intent.getStringExtra("USERNAME") ?: ""
+        Log.d("HomeActivity", "Username received: $username")
+
         setContent {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ProfileScreen()
+                    ProfileScreen(username, dbHelper)
                 }
             }
         }
@@ -48,12 +54,15 @@ class ProfileActivity : ComponentActivity() {
 }
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
     var isEditing by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("Abellana Paul") }
-    var course by remember { mutableStateOf("BSIT - 2") }
-    var birthdate by remember { mutableStateOf("01/01/2000") }
-
+    var searchQuery by remember { mutableStateOf("") }
+    // Fetch user data from the database
+    val user = dbHelper.getUserData(username)
+    var name by remember { mutableStateOf("") }
+    var course by remember { mutableStateOf("") }
+    var birthdate by remember { mutableStateOf("") }
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -130,12 +139,18 @@ fun ProfileScreen() {
 
             // Log Out Button
             Button(
-                onClick = { /* Handle Log Out Action */ },
+                onClick = {
+
+                    val intent = Intent(context, MainActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
                 Text(text = "Log Out")
             }
+
 
             // Delete Account Button
             Button(
@@ -150,10 +165,3 @@ fun ProfileScreen() {
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    MyAcademateTheme {
-        ProfileScreen()
-    }
-}
