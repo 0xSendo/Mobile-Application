@@ -1,24 +1,43 @@
+// TaskRepository.kt
 package com.example.myacademate
 
+import androidx.compose.runtime.mutableStateListOf
+
+data class Task(
+    val id: Int,
+    val subjectName: String,
+    val courseCode: String,
+    val dueTime: String,
+    val isDone: Boolean = false
+)
+
 object TaskRepository {
-    private val tasks = mutableListOf<Task>()
+    val taskList = mutableStateListOf<DatabaseHelper.Task>()
 
-    fun addTask(task: Task) {
-        tasks.add(task)
+    fun addTask(task: DatabaseHelper.Task) {
+        taskList.add(task)
     }
 
-    fun getTasks(): List<Task> {
-        return tasks.toList()
-    }
-
-    fun updateTask(updatedTask: Task) {
-        val index = tasks.indexOfFirst { it.id == updatedTask.id }
+    fun updateTask(updatedTask: DatabaseHelper.Task) {
+        val index = taskList.indexOfFirst { it.id == updatedTask.id }
         if (index != -1) {
-            tasks[index] = updatedTask
+            taskList[index] = updatedTask
         }
     }
 
     fun deleteTask(taskId: Int) {
-        tasks.removeIf { it.id == taskId }
+        taskList.removeAll { it.id == taskId }
+    }
+
+    fun toggleTaskStatus(taskId: Int) {
+        val index = taskList.indexOfFirst { it.id == taskId }
+        if (index != -1) {
+            val task = taskList[index]
+            taskList[index] = task.copy(isDone = !task.isDone)
+        }
+    }
+
+    fun getTasks(): List<DatabaseHelper.Task> {
+        return taskList
     }
 }
