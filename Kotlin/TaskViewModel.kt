@@ -1,70 +1,45 @@
 package com.example.myacademate
 
-import android.app.Application
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
 
-class TaskViewModel(application: Application) : AndroidViewModel(application) {
-    private val databaseHelper = DatabaseHelper(application)
+class TaskViewModel : ViewModel() {
+    // Live data for tasks
+    val taskList = TaskRepository.taskList
 
-    // Mutable state to hold the list of tasks
-    private val _taskList = mutableStateOf<List<DatabaseHelper.Task>>(emptyList())
-    val taskList: List<DatabaseHelper.Task>
-        get() = _taskList.value
-
-    // ID for the task being edited
-    private val _editingTaskId = mutableStateOf<Int?>(null)
-    val editingTaskId: Int?
-        get() = _editingTaskId.value
-
-    // Load tasks from the database
-    fun loadTasks(username: String) {
-        viewModelScope.launch {
-            _taskList.value = databaseHelper.getUserTasks(username)
-        }
-    }
+    // Mutable state for editing task ID
+    var editingTaskId by mutableStateOf<Int?>(null)
+        private set
 
     // Add a new task
-    fun addTask(username: String, task: DatabaseHelper.Task) {
-        viewModelScope.launch {
-            databaseHelper.addTask(username, task.subjectName, task.courseCode, task.dueTime)
-            loadTasks(username) // Refresh the task list
-        }
+    fun addTask(task: DatabaseHelper.Task) {
+        TaskRepository.addTask(task)
     }
 
     // Update an existing task
-    fun updateTask(username: String, updatedTask: DatabaseHelper.Task) {
-        viewModelScope.launch {
-            databaseHelper.updateTask(updatedTask)
-            loadTasks(username) // Refresh the task list
-        }
+    fun updateTask(updatedTask: DatabaseHelper.Task) {
+        TaskRepository.updateTask(updatedTask)
     }
 
     // Delete a task by ID
-    fun deleteTask(username: String, taskId: Int) {
-        viewModelScope.launch {
-            databaseHelper.deleteTask(taskId)
-            loadTasks(username) // Refresh the task list
-        }
+    fun deleteTask(taskId: Int) {
+        TaskRepository.deleteTask(taskId)
     }
 
     // Toggle task completion status
-    fun toggleTaskStatus(username: String, taskId: Int, isDone: Boolean) {
-        viewModelScope.launch {
-            databaseHelper.toggleTaskStatus(taskId, isDone)
-            loadTasks(username) // Refresh the task list
-        }
+    fun toggleTaskStatus(taskId: Int) {
+        TaskRepository.toggleTaskStatus(taskId)
     }
 
     // Start editing a task
     fun startEditingTask(taskId: Int) {
-        _editingTaskId.value = taskId
+        editingTaskId = taskId
     }
 
-    // Clear editing state (when done editing or saving a task)
+    // Clear editing state
     fun clearEditingTask() {
-        _editingTaskId.value = null
+        editingTaskId = null
     }
 }
