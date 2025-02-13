@@ -1,15 +1,22 @@
-// TaskRepository.kt
 package com.example.myacademate
 
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
-data class Task(
+class Task(
     val id: Int,
     val subjectName: String,
     val courseCode: String,
     val dueTime: String,
-    val isDone: Boolean = false
-)
+    isDone: Boolean = false,
+    completionPercentage: Int = 0
+) {
+    var isDone by mutableStateOf(isDone)
+    var completionPercentage by mutableStateOf(completionPercentage)
+}
+
 
 object TaskRepository {
     val taskList = mutableStateListOf<DatabaseHelper.Task>()
@@ -17,6 +24,7 @@ object TaskRepository {
     fun addTask(task: DatabaseHelper.Task) {
         taskList.add(task)
     }
+
 
     fun updateTask(updatedTask: DatabaseHelper.Task) {
         val index = taskList.indexOfFirst { it.id == updatedTask.id }
@@ -34,6 +42,14 @@ object TaskRepository {
         if (index != -1) {
             val task = taskList[index]
             taskList[index] = task.copy(isDone = !task.isDone)
+        }
+    }
+
+    fun updateTaskCompletion(taskId: Int, newCompletionPercentage: Int) {
+        val index = taskList.indexOfFirst { it.id == taskId }
+        if (index != -1) {
+            val task = taskList[index]
+            taskList[index] = task.copy(completionPercentage = newCompletionPercentage)
         }
     }
 
