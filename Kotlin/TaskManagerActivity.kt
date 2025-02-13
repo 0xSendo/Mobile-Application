@@ -108,7 +108,8 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
                             subjectName = taskName,
                             courseCode = courseCode,
                             dueTime = dueTime,
-                            isDone = taskList.first { it.id == editingTaskId }.isDone
+                            isDone = taskList.first { it.id == editingTaskId }.isDone,
+                            completionPercentage = taskList.first { it.id == editingTaskId }.completionPercentage
                         )
                         taskViewModel.updateTask(updatedTask)
                     }
