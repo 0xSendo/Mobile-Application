@@ -31,6 +31,8 @@
 
 
         override fun onCreate(db: SQLiteDatabase?) {
+            db?.execSQL("PRAGMA foreign_keys = ON;")
+
             val createUserTable = """
             CREATE TABLE $TABLE_USER (
                 $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,19 +58,21 @@
                 $COLUMN_IS_DONE INTEGER DEFAULT 0, 
                 FOREIGN KEY ($COLUMN_USERNAME) REFERENCES $TABLE_USER($COLUMN_USERNAME) ON DELETE CASCADE
         )
-    """
+    """.trimIndent()
             Log.d("DatabaseHelper", "Executing CREATE_TASK_TABLE: $CREATE_TASK_TABLE")
             db?.execSQL(CREATE_TASK_TABLE)
         }
 
         override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
             if (oldVersion < newVersion) {
-                db?.execSQL("DROP TABLE IF EXISTS $TABLE_TASK")
-                db?.execSQL("DROP TABLE IF EXISTS $TABLE_USER")
+                db?.execSQL("PRAGMA foreign_keys = OFF;") // Temporarily disable foreign keys to avoid constraint issues
+                db?.execSQL("DROP TABLE IF EXISTS $TABLE_TASK") // Drop task table first
+                db?.execSQL("DROP TABLE IF EXISTS $TABLE_USER") // Then drop user table
+                db?.execSQL("PRAGMA foreign_keys = ON;") // Re-enable foreign keys
                 onCreate(db)
             }
         }
-    
+
         fun hashPassword(password: String): String {
             val bytes = password.toByteArray()
             val md = MessageDigest.getInstance("SHA-256")
@@ -280,7 +284,10 @@
             val subjectName: String,
             val courseCode: String,
             val dueTime: String,
-            val isDone: Boolean = false
+            val isDone: Boolean = false,
+            var completionPercentage: Int = 0
         )
+
+
     }
 
