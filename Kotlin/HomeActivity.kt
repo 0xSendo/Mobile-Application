@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,8 +19,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -72,9 +77,6 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
     val taskList = taskViewModel.taskList
     val user = dbHelper.getUserData(username)
     val latestTask = taskList.lastOrNull()
-    
-    // Log the fetched user
-    Log.d("HomeScreen", "User fetched: $user")
 
     // Handle null or missing user data safely by providing fallback values
     val firstName = user?.firstName ?: "Unknown"
@@ -82,76 +84,100 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
     val course = user?.course ?: "N/A"
     val yearLevel = user?.yearLevel ?: "N/A"
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        // Profile Section (existing code)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Profile Section
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    val intent = Intent(context, ProfileActivity::class.java)
-                    intent.putExtra("USERNAME", username)
-                    intent.putExtra("FIRST_NAME", firstName)
-                    intent.putExtra("LAST_NAME", lastName)
-                    intent.putExtra("COURSE", course)
-                    intent.putExtra("YEAR_LEVEL", yearLevel)
+                    val intent = Intent(context, ProfileActivity::class.java).apply {
+                        putExtra("USERNAME", username)
+                        putExtra("FIRST_NAME", firstName)
+                        putExtra("LAST_NAME", lastName)
+                        putExtra("COURSE", course)
+                        putExtra("YEAR_LEVEL", yearLevel)
+                    }
                     context.startActivity(intent)
                 }
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_profile),
                 contentDescription = "Profile Picture",
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(56.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
                     text = "$firstName $lastName",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(bottom = 4.dp)
+                    style = MaterialTheme.typography.titleLarge
                 )
                 Text(
-                    text = "$course - $yearLevel",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "$course - Year $yearLevel",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
-            Image(
-                painter = painterResource(id = R.drawable.ic_notifications),
-                contentDescription = "Notifications",
-                modifier = Modifier.size(32.dp)
-            )
+            IconButton(onClick = {
+                // Handle notifications click
+            }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_notifications),
+                    contentDescription = "Notifications",
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        // Search Field
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             label = { Text("Search") },
-            modifier = Modifier.fillMaxWidth()
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search Icon"
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth(),
+            singleLine = true
         )
 
-        // Replace the hardcoded card with dynamic content
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(text = "Task Manager", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(24.dp))
 
+        // Task Manager Section
+        Text(text = "Task Manager", style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(8.dp))
 
         if (latestTask != null) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 8.dp)
+                    .clickable {
+                        val intent = Intent(context, TaskManagerActivity::class.java)
+                        context.startActivity(intent)
+                    },
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "${latestTask.subjectName} - Due ${formatDueDate(latestTask.dueTime)}",
+                        text = latestTask.subjectName,
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = latestTask.dueTime,
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "Due ${formatDueDate(latestTask.dueTime)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }
@@ -159,51 +185,84 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
             Text(text = "No tasks available", style = MaterialTheme.typography.bodyMedium)
         }
 
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(text = "Expense Tracker", style = MaterialTheme.typography.titleLarge)
+        // Expense Tracker Section
+        Text(text = "Expense Tracker", style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(8.dp))
+
         Card(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+                .clickable {
+                    // Navigate to Expense Tracker
+                },
             elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                /* Text(text = "Total Spent: $$totalSpent", style = MaterialTheme.typography.bodyLarge)*/
+                Text(
+                    text = "Track your expenses",
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
         }
 
+        Spacer(modifier = Modifier.height(24.dp))
+
         // Bottom Navigation
+        Spacer(modifier = Modifier.weight(1f))
         Row(
-            modifier = Modifier.fillMaxWidth().height(80.dp).padding(top = 16.dp),
-            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            listOf(
-                Pair(R.drawable.ic_home, "Home") to {},
-                Pair(R.drawable.ic_tasks, "Tasks") to {
+            val navigationItems = listOf(
+                NavigationItem("Home", R.drawable.ic_home) {},
+                NavigationItem("Tasks", R.drawable.ic_tasks) {
                     val intent = Intent(context, TaskManagerActivity::class.java)
                     context.startActivity(intent)
                 },
-                Pair(R.drawable.ic_progress, "Progress") to {
+                NavigationItem("Progress", R.drawable.ic_progress) {
                     val intent = Intent(context, ProgressTrackerActivity::class.java)
                     context.startActivity(intent)
                 },
-                Pair(R.drawable.ic_pomodoro, "Pomodoro") to {
+                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
                     val intent = Intent(context, PomodoroActivity::class.java)
                     context.startActivity(intent)
                 },
-                Pair(R.drawable.ic_calendar, "Calendar") to {}
-            ).forEach { (icon, action) ->
-                Image(
-                    painter = painterResource(id = icon.first),
-                    contentDescription = icon.second,
-                    modifier = Modifier.weight(1f).size(60.dp).clickable { action() }
-                )
+                NavigationItem("Calendar", R.drawable.ic_calendar) {
+                    // Navigate to Calendar
+                }
+            )
+            navigationItems.forEach { item ->
+                IconButton(
+                    onClick = { item.action() },
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = item.label,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
     }
 }
 
+// Add NavigationItem data class
+data class NavigationItem(
+    val label: String,
+    @DrawableRes val icon: Int,
+    val action: () -> Unit
+)
+
+// Implement formatDueDate function
 fun formatDueDate(dueTime: String): String {
-    
+    // Simple placeholder; you can improve this as needed
     return dueTime
 }
+
