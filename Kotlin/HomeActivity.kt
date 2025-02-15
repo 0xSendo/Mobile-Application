@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class HomeActivity : ComponentActivity() {
+    private val taskViewModel: TaskViewModel by viewModels() // Initialize taskViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -54,7 +57,8 @@ class HomeActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    HomeScreen(username, dbHelper)
+                    // Pass taskViewModel to HomeScreen
+                    HomeScreen(username, dbHelper, taskViewModel)
                 }
             }
         }
@@ -62,12 +66,15 @@ class HomeActivity : ComponentActivity() {
 }
 
 @Composable
-fun HomeScreen(username: String, dbHelper: DatabaseHelper) {
+fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskViewModel) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
-
-    // Fetch user data from the database
+    val taskList = taskViewModel.taskList
     val user = dbHelper.getUserData(username)
+    val latestTask = taskList.lastOrNull()
+    
+    // Log the fetched user
+    Log.d("HomeScreen", "User fetched: $user")
 
     // Handle null or missing user data safely by providing fallback values
     val firstName = user?.firstName ?: "Unknown"
@@ -76,7 +83,7 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper) {
     val yearLevel = user?.yearLevel ?: "N/A"
 
     Column(modifier = Modifier.padding(16.dp)) {
-        // Profile Section
+        // Profile Section (existing code)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -99,12 +106,12 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper) {
             Spacer(modifier = Modifier.width(8.dp))
             Column {
                 Text(
-                    text = "$firstName $lastName",  // Display the name with fallback
+                    text = "$firstName $lastName",
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
-                    text = "$course - $yearLevel",  // Display course and year level with fallback
+                    text = "$course - $yearLevel",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -125,19 +132,33 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper) {
             modifier = Modifier.fillMaxWidth()
         )
 
+        // Replace the hardcoded card with dynamic content
         Spacer(modifier = Modifier.height(20.dp))
         Text(text = "Task Manager", style = MaterialTheme.typography.titleLarge)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = "Basic Mathematics - Due Today", style = MaterialTheme.typography.bodyLarge)
-                Text(text = "08:15 AM", style = MaterialTheme.typography.bodyMedium)
+
+
+        if (latestTask != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "${latestTask.subjectName} - Due ${formatDueDate(latestTask.dueTime)}",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = latestTask.dueTime,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
+        } else {
+            Text(text = "No tasks available", style = MaterialTheme.typography.bodyMedium)
         }
+
 
         Spacer(modifier = Modifier.height(20.dp))
         Text(text = "Expense Tracker", style = MaterialTheme.typography.titleLarge)
@@ -166,7 +187,10 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper) {
                     val intent = Intent(context, ProgressTrackerActivity::class.java)
                     context.startActivity(intent)
                 },
-                Pair(R.drawable.ic_pomodoro, "Pomodoro") to {},
+                Pair(R.drawable.ic_pomodoro, "Pomodoro") to {
+                    val intent = Intent(context, PomodoroActivity::class.java)
+                    context.startActivity(intent)
+                },
                 Pair(R.drawable.ic_calendar, "Calendar") to {}
             ).forEach { (icon, action) ->
                 Image(
@@ -177,4 +201,9 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper) {
             }
         }
     }
+}
+
+fun formatDueDate(dueTime: String): String {
+    
+    return dueTime
 }
