@@ -47,7 +47,7 @@ object TaskRepository {
 
     fun updateTaskCompletion(taskId: Int, newCompletionPercentage: Int) {
         val index = taskList.indexOfFirst { it.id == taskId }
-        if (index != -1) {
+        if (index != null) {
             val task = taskList[index]
             taskList[index] = task.copy(completionPercentage = newCompletionPercentage)
         }
