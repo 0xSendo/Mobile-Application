@@ -80,11 +80,31 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         return digest.fold("") { str, it -> str + "%02x".format(it) }
     }
 
+    fun getUserCount(): Int {
+        val db = this.readableDatabase
+        val query = "SELECT COUNT(*) FROM $TABLE_USER"
+        val cursor = db.rawQuery(query, null)
+        var count = 0
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0)
+        }
+        cursor.close()
+        return count
+    }
+
     fun addUser(firstName: String, lastName: String, course: String, yearLevel: String, username: String, password: String, birthdate: String): Long {
         val db = writableDatabase
         val hashedPassword = hashPassword(password)
         val trimmedUsername = username.trim()
         val trimmerPassword : String = password.trim()
+
+
+        // Check if the maximum number of users is reached
+        if (getUserCount() >= 100) {
+            Log.d("DatabaseHelper", "Maximum number of users (100) reached.")
+            return -1L
+        }
+
         // Check if the username is already taken
         if (isUsernameTaken(trimmedUsername)) {
             Log.d("DatabaseHelper", "Username '$trimmedUsername' is already taken.")
