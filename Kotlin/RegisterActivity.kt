@@ -12,19 +12,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class RegisterActivity : ComponentActivity() {
     private lateinit var dbHelper: DatabaseHelper
@@ -34,18 +40,32 @@ class RegisterActivity : ComponentActivity() {
         dbHelper = DatabaseHelper(this)
 
         setContent {
-            MyAcademateTheme {
+            val customColors = darkColorScheme(
+                primary = Color(0xFFFFA31A),  // Orange
+                secondary = Color(0xFF808080),  // Gray
+                background = Color(0xFF292929),  // Dark Gray
+                surface = Color(0xFF1B1B1B),  // Darker Gray
+                onPrimary = Color(0xFFFFFFFF),  // White
+                onSecondary = Color(0xFFFFFFFF),  // White
+                onBackground = Color(0xFFFFFFFF),  // White
+                onSurface = Color(0xFFFFFFFF),  // White
+                error = Color(0xFFCF6679),  // Red
+                onError = Color.Black
+            )
+
+            MaterialTheme(
+                colorScheme = customColors,
+                typography = Typography() // Create a default instance of Typography
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = customColors.background
                 ) {
                     RegisterScreen(
                         onRegisterSuccess = {
                             Log.d("RegisterActivity", "Registration successful.")
-                            // Navigate to login screen or home
-                            val intent = Intent(this, MainActivity::class.java)
-                            startActivity(intent)
-                            finish()
+                            // Show success dialog
+                            var showSuccessDialog = true
                         },
                         dbHelper = dbHelper,
                         onNavigateToLogin = {
@@ -60,6 +80,7 @@ class RegisterActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
@@ -75,6 +96,7 @@ fun RegisterScreen(
     var yearLevel by remember { mutableStateOf("") }
     var birthdate by remember { mutableStateOf("") } // New field for birthdate
     var errorMessage by remember { mutableStateOf("") }
+    var showSuccessDialog by remember { mutableStateOf(false) } // State for showing success dialog
 
     Column(
         modifier = Modifier
@@ -85,7 +107,8 @@ fun RegisterScreen(
         Text(
             text = "Register",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         // First Name
@@ -96,7 +119,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("First Name") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -108,7 +139,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("Last Name") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -120,7 +159,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("Username") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -132,7 +179,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("Course") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -144,7 +199,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("Year Level") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -156,7 +219,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("Birthdate (MM/DD/YYYY)") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -168,7 +239,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -180,7 +259,15 @@ fun RegisterScreen(
                 errorMessage = ""
             },
             label = { Text("Confirm Password") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -228,9 +315,10 @@ fun RegisterScreen(
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Text(text = "Register")
+            Text(text = "Register", color = MaterialTheme.colorScheme.onPrimary)
         }
 
         // Error Message
@@ -248,9 +336,29 @@ fun RegisterScreen(
             onClick = {
                 onNavigateToLogin() // Navigate to Login screen
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text(text = "Already have an account? Log in here")
+            Text(text = "Already have an account? Log in here", color = MaterialTheme.colorScheme.onSecondary)
         }
+    }
+
+    // Success Dialog
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSuccessDialog = false
+                        onNavigateToLogin() // Navigate to Login screen
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Registration Successful") },
+            text = { Text("You have been successfully registered.") }
+        )
     }
 }
