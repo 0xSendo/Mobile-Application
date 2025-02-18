@@ -68,8 +68,24 @@
             android:label="Pomodoro"
             android:theme="@style/Theme.MyAcademate"
             android:exported="true" />
+        <activity
+            android:name=".TaskViewModel"
+            android:exported="true"
+            android:label="TaskViewModel"
+            android:theme="@style/Theme.MyAcademate" />
 
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="SettingsActivity"
+            android:theme="@style/Theme.MyAcademate" />
+
+        <activity
+            android:name=".DeveloperActivity"
+            android:exported="true"
+            android:label="DeveloperActivity"
+            android:theme="@style/Theme.MyAcademate" />
     </application>
 
 </manifest>
