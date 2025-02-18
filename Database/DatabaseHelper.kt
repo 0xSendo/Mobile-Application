@@ -12,7 +12,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         private const val DATABASE_NAME = "academate.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
         private const val TABLE_USER = "users"
         private const val TABLE_TASK = "tasks"
         private const val COLUMN_ID = "id"
@@ -34,17 +34,17 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db?.execSQL("PRAGMA foreign_keys = ON;")
 
         val createUserTable = """
-            CREATE TABLE $TABLE_USER (
-                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
-                $COLUMN_PASSWORD TEXT NOT NULL,
-                $COLUMN_FIRST_NAME TEXT NOT NULL,
-                $COLUMN_LAST_NAME TEXT NOT NULL,
-                $COLUMN_COURSE TEXT NOT NULL,
-                $COLUMN_YEAR_LEVEL TEXT NOT NULL,
-                $COLUMN_BIRTHDATE TEXT NOT NULL
-            )
-        """
+    CREATE TABLE $TABLE_USER (
+        $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        $COLUMN_USERNAME TEXT NOT NULL UNIQUE,
+        $COLUMN_PASSWORD TEXT NOT NULL,
+        $COLUMN_FIRST_NAME TEXT NOT NULL,
+        $COLUMN_LAST_NAME TEXT NOT NULL,
+        $COLUMN_COURSE TEXT NOT NULL,
+        $COLUMN_YEAR_LEVEL TEXT NOT NULL,
+        $COLUMN_BIRTHDATE TEXT NOT NULL
+    )
+"""
         db?.execSQL(createUserTable)
 
 
@@ -84,7 +84,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         val db = writableDatabase
         val hashedPassword = hashPassword(password)
         val trimmedUsername = username.trim()
-
+        val trimmerPassword : String = password.trim()
         // Check if the username is already taken
         if (isUsernameTaken(trimmedUsername)) {
             Log.d("DatabaseHelper", "Username '$trimmedUsername' is already taken.")
