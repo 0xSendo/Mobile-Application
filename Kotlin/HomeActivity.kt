@@ -23,12 +23,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,10 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class HomeActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels() // Initialize taskViewModel
@@ -57,10 +60,26 @@ class HomeActivity : ComponentActivity() {
         Log.d("HomeActivity", "User data fetched in HomeActivity: $user")
 
         setContent {
-            MyAcademateTheme {
+            val customColors = darkColorScheme(
+                primary = Color(0xFFFFA31A),  // Orange
+                secondary = Color(0xFF808080),  // Gray
+                background = Color(0xFF292929),  // Dark Gray
+                surface = Color(0xFF1B1B1B),  // Darker Gray
+                onPrimary = Color(0xFFFFFFFF),  // White
+                onSecondary = Color(0xFFFFFFFF),  // White
+                onBackground = Color(0xFFFFFFFF),  // White
+                onSurface = Color(0xFFFFFFFF),  // White
+                error = Color(0xFFCF6679),  // Red
+                onError = Color.Black
+            )
+
+            MaterialTheme(
+                colorScheme = customColors,
+                typography = MaterialTheme.typography // Use the default typography provided by Material Design
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = customColors.background
                 ) {
                     // Pass taskViewModel to HomeScreen
                     HomeScreen(username, dbHelper, taskViewModel)
@@ -70,6 +89,7 @@ class HomeActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskViewModel) {
     val context = LocalContext.current
@@ -114,7 +134,8 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
             Column {
                 Text(
                     text = "$firstName $lastName",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "$course - Year $yearLevel",
@@ -129,7 +150,8 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
                 Icon(
                     painter = painterResource(id = R.drawable.ic_notifications),
                     contentDescription = "Notifications",
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -144,18 +166,31 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
-                    contentDescription = "Search Icon"
+                    contentDescription = "Search Icon",
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             },
             modifier = Modifier
                 .fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Task Manager Section
-        Text(text = "Task Manager", style = MaterialTheme.typography.headlineSmall)
+        Text(
+            text = "Task Manager",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         if (latestTask != null) {
@@ -167,12 +202,14 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
                         val intent = Intent(context, TaskManagerActivity::class.java)
                         context.startActivity(intent)
                     },
-                elevation = CardDefaults.cardElevation(4.dp)
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = latestTask.subjectName,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Due ${formatDueDate(latestTask.dueTime)}",
@@ -182,13 +219,21 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
                 }
             }
         } else {
-            Text(text = "No tasks available", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = "No tasks available",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // Expense Tracker Section
-        Text(text = "Expense Tracker", style = MaterialTheme.typography.headlineSmall)
+        Text(
+            text = "Expense Tracker",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         Card(
@@ -198,12 +243,14 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
                 .clickable {
                     // Navigate to Expense Tracker
                 },
-            elevation = CardDefaults.cardElevation(4.dp)
+            elevation = CardDefaults.cardElevation(4.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = "Track your expenses",
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -245,7 +292,8 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
                     Icon(
                         painter = painterResource(id = item.icon),
                         contentDescription = item.label,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -265,4 +313,3 @@ fun formatDueDate(dueTime: String): String {
     // Simple placeholder; you can improve this as needed
     return dueTime
 }
-
