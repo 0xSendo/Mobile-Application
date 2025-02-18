@@ -73,6 +73,7 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var course by remember { mutableStateOf("") }
     var yearLevel by remember { mutableStateOf("") }
+    var birthdate by remember { mutableStateOf("") } // New field for birthdate
     var errorMessage by remember { mutableStateOf("") }
 
     Column(
@@ -92,7 +93,7 @@ fun RegisterScreen(
             value = firstName,
             onValueChange = {
                 firstName = it
-                errorMessage = "" // Clear error message when user starts typing
+                errorMessage = ""
             },
             label = { Text("First Name") },
             modifier = Modifier.fillMaxWidth()
@@ -147,6 +148,18 @@ fun RegisterScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Birthdate (New field)
+        OutlinedTextField(
+            value = birthdate,
+            onValueChange = {
+                birthdate = it
+                errorMessage = ""
+            },
+            label = { Text("Birthdate (MM/DD/YYYY)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Password
         OutlinedTextField(
             value = password,
@@ -180,6 +193,7 @@ fun RegisterScreen(
                 val trimmedUsername = username.trim()
                 val trimmedCourse = course.trim()
                 val trimmedYearLevel = yearLevel.trim()
+                val trimmedBirthdate = birthdate.trim() // Trim birthdate
                 val trimmedPassword = password.trim()
                 val trimmedConfirmPassword = confirmPassword.trim()
 
@@ -187,17 +201,14 @@ fun RegisterScreen(
                 when {
                     trimmedFirstName.isEmpty() || trimmedLastName.isEmpty() || trimmedUsername.isEmpty() ||
                             trimmedCourse.isEmpty() || trimmedYearLevel.isEmpty() || trimmedPassword.isEmpty() ||
-                            trimmedConfirmPassword.isEmpty() -> {
+                            trimmedConfirmPassword.isEmpty() || trimmedBirthdate.isEmpty() -> {
                         errorMessage = "All fields must be filled."
-                        Log.d("RegisterActivity", "Registration failed: Fields are empty.")
                     }
                     trimmedPassword.length < 6 -> {
                         errorMessage = "Password must be at least 6 characters."
-                        Log.d("RegisterActivity", "Registration failed: Password too short.")
                     }
                     trimmedPassword != trimmedConfirmPassword -> {
                         errorMessage = "Passwords do not match."
-                        Log.d("RegisterActivity", "Registration failed: Passwords do not match.")
                     }
                     else -> {
                         val result = dbHelper.addUser(
@@ -206,13 +217,12 @@ fun RegisterScreen(
                             trimmedCourse,
                             trimmedYearLevel,
                             trimmedUsername,
-                            trimmedPassword
+                            trimmedPassword,
+                            trimmedBirthdate // Pass the birthdate
                         )
                         if (result == -1L) {
                             errorMessage = "Username already taken."
-                            Log.d("RegisterActivity", "Registration failed: Username already taken.")
                         } else {
-                            Log.d("RegisterActivity", "Registration successful for user: $trimmedUsername")
                             onRegisterSuccess()
                         }
                     }
