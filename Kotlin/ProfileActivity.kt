@@ -1,19 +1,25 @@
 package com.example.myacademate
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -28,12 +34,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberImagePainter
 import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class ProfileActivity : ComponentActivity() {
+    private var imageUri: Uri? by mutableStateOf(null)
+    private val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        imageUri = uri
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val dbHelper = DatabaseHelper(applicationContext)
@@ -46,7 +59,7 @@ class ProfileActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ProfileScreen(username, dbHelper)
+                    ProfileScreen(username, dbHelper, imageUri, onImageSelected = { getContent.launch("image/*") })
                 }
             }
         }
@@ -54,15 +67,18 @@ class ProfileActivity : ComponentActivity() {
 }
 
 @Composable
-fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
+fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, onImageSelected: () -> Unit) {
     var isEditing by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     // Fetch user data from the database
+    var clipBehavior = CircleShape
     val user = dbHelper.getUserData(username)
     var name by remember { mutableStateOf("") }
     var course by remember { mutableStateOf("") }
     var birthdate by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var showDialog by remember { mutableStateOf(false) } // State to control the visibility of the dialog
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -75,11 +91,33 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
                 .height(120.dp)
                 .padding(bottom = 12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "Profile Picture",
-                modifier = Modifier.fillMaxSize()
-            )
+            if (imageUri != null) {
+                Image(
+                    painter = rememberImagePainter(imageUri),
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+
+        // Button to change profile picture
+        Button(
+            onClick = onImageSelected,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Text(text = "Change Profile Picture")
         }
 
         // Editable Name (Pre-filled)
@@ -88,7 +126,9 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
             onValueChange = { if (isEditing) name = it },
             label = { Text("Name") },
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             enabled = isEditing,
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
         )
@@ -99,7 +139,9 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
             onValueChange = { if (isEditing) course = it },
             label = { Text("Course/Section") },
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             enabled = isEditing,
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
         )
@@ -110,7 +152,9 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
             onValueChange = { if (isEditing) birthdate = it },
             label = { Text("Birthdate") },
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
             enabled = isEditing,
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
         )
@@ -120,7 +164,9 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
             // Edit Profile Button
             Button(
                 onClick = { isEditing = !isEditing },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(text = if (isEditing) "Save Changes" else "Edit Profile")
@@ -129,8 +175,14 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
             // Save Profile Button (Only Visible When Editing)
             if (isEditing) {
                 Button(
-                    onClick = { /* Handle Save Action */ },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    onClick = {
+                        // Handle Save Action
+                        dbHelper.updateUser(user?.id ?: 0, name, "", course, "", birthdate)
+                        isEditing = false
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                 ) {
                     Text(text = if (isEditing) "Cancel edit" else "Edit Profile")
@@ -140,17 +192,29 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
             // Log Out Button
             Button(
                 onClick = {
-
-                    val intent = Intent(context, MainActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    context.startActivity(intent)
+                    showDialog = true // Show the confirmation dialog
                 },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
                 Text(text = "Log Out")
             }
 
+            // Settings Button
+            Button(
+                onClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+            ) {
+                Text(text = "Settings")
+            }
 
             // Delete Account Button
             Button(
@@ -162,6 +226,32 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper) {
             }
         }
     }
+
+    // Confirmation Dialog
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDialog = false
+                        val intent = Intent(context, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            title = { Text("Log Out") },
+            text = { Text("Are you sure you want to log out?") }
+        )
+    }
 }
-
-
