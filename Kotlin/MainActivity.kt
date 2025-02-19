@@ -14,20 +14,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var dbHelper: DatabaseHelper
@@ -38,10 +44,26 @@ class MainActivity : ComponentActivity() {
         dbHelper = DatabaseHelper(this)
 
         setContent {
-            MyAcademateTheme {
+            val customColors = darkColorScheme(
+                primary = Color(0xFFFFA31A),  // Orange
+                secondary = Color(0xFF808080),  // Gray
+                background = Color(0xFF292929),  // Dark Gray
+                surface = Color(0xFF1B1B1B),  // Darker Gray
+                onPrimary = Color(0xFFFFFFFF),  // White
+                onSecondary = Color(0xFFFFFFFF),  // White
+                onBackground = Color(0xFFFFFFFF),  // White
+                onSurface = Color(0xFFFFFFFF),  // White
+                error = Color(0xFFCF6679),  // Red
+                onError = Color.Black
+            )
+
+            MaterialTheme(
+                colorScheme = customColors,
+                typography = Typography() // Create a default instance of Typography
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = customColors.background
                 ) {
                     LoginScreen(
                         onLoginSuccess = {
@@ -62,7 +84,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -78,30 +100,55 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Login",
+            text = "Welcome to MyAcademate",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 16.dp),
+            color = MaterialTheme.colorScheme.onBackground
         )
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
             label = { Text("Username") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
-        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                cursorColor = MaterialTheme.colorScheme.onBackground,
+                focusedLabelColor = MaterialTheme.colorScheme.secondary,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+            ),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
-        Spacer(modifier = Modifier.height(16.dp))
         if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.fillMaxWidth())
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                color = MaterialTheme.colorScheme.secondary
+            )
         } else {
             Button(
                 onClick = {
@@ -114,17 +161,20 @@ fun LoginScreen(
                     }
                     isLoading = false
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text(text = "Login")
+                Text(text = "Login", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = { onRegister() },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text(text = "Don't have an account? Register here")
+            Text(text = "Don't have an account? Register here", color = MaterialTheme.colorScheme.onSecondary)
         }
         if (errorMessage.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -136,4 +186,3 @@ fun LoginScreen(
         }
     }
 }
-
