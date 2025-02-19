@@ -1,3 +1,5 @@
+fix the placement of the profile and i also have double "save changes" button remove the other one and fix the birthdate field where i can actually input dates 
+
 package com.example.myacademate
 
 import android.content.Intent
@@ -15,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -69,22 +70,18 @@ class ProfileActivity : ComponentActivity() {
 @Composable
 fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, onImageSelected: () -> Unit) {
     var isEditing by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    // Fetch user data from the database
-    var clipBehavior = CircleShape
-    val user = dbHelper.getUserData(username)
-    var name by remember { mutableStateOf("") }
-    var course by remember { mutableStateOf("") }
-    var birthdate by remember { mutableStateOf("") }
+    val user by remember { mutableStateOf(dbHelper.getUserData(username)) }
+    var name by remember { mutableStateOf(user?.firstName ?: "") }
+    var course by remember { mutableStateOf(user?.course ?: "") }
+    var birthdate by remember { mutableStateOf(user?.birthdate ?: "") }
     val context = LocalContext.current
-    var showDialog by remember { mutableStateOf(false) } // State to control the visibility of the dialog
+    var showDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Profile Picture (Use Image or Icon for Profile Image)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,7 +106,6 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
             }
         }
 
-        // Button to change profile picture
         Button(
             onClick = onImageSelected,
             modifier = Modifier
@@ -120,12 +116,10 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
             Text(text = "Change Profile Picture")
         }
 
-        // Editable Name (Pre-filled)
         TextField(
             value = name,
             onValueChange = { if (isEditing) name = it },
             label = { Text("Name") },
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
@@ -133,12 +127,10 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
         )
 
-        // Editable Course/Section (Pre-filled)
         TextField(
             value = course,
             onValueChange = { if (isEditing) course = it },
-            label = { Text("Course/Section") },
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
+            label = { Text("Course/Year") },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 8.dp),
@@ -146,12 +138,10 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
         )
 
-        // Editable Birthdate (Pre-filled)
         TextField(
             value = birthdate,
             onValueChange = { if (isEditing) birthdate = it },
             label = { Text("Birthdate") },
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
@@ -159,9 +149,7 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
         )
 
-        // Buttons Section
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Edit Profile Button
             Button(
                 onClick = { isEditing = !isEditing },
                 modifier = Modifier
@@ -172,12 +160,10 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
                 Text(text = if (isEditing) "Save Changes" else "Edit Profile")
             }
 
-            // Save Profile Button (Only Visible When Editing)
             if (isEditing) {
                 Button(
                     onClick = {
-                        // Handle Save Action
-                        dbHelper.updateUser(user?.id ?: 0, name, "", course, "", birthdate)
+                        dbHelper.updateUser(user?.id ?: 0, name, user?.lastName ?: "", course, user?.yearLevel ?: "", birthdate)
                         isEditing = false
                     },
                     modifier = Modifier
@@ -185,15 +171,12 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
                         .padding(bottom = 8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                 ) {
-                    Text(text = if (isEditing) "Cancel edit" else "Edit Profile")
+                    Text(text = "Save Changes")
                 }
             }
 
-            // Log Out Button
             Button(
-                onClick = {
-                    showDialog = true // Show the confirmation dialog
-                },
+                onClick = { showDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp),
@@ -202,7 +185,6 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
                 Text(text = "Log Out")
             }
 
-            // Settings Button
             Button(
                 onClick = {
                     val intent = Intent(context, SettingsActivity::class.java)
@@ -216,7 +198,6 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
                 Text(text = "Settings")
             }
 
-            // Delete Account Button
             Button(
                 onClick = { /* Handle Delete Account Action */ },
                 modifier = Modifier.fillMaxWidth(),
@@ -227,7 +208,6 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
         }
     }
 
-    // Confirmation Dialog
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
