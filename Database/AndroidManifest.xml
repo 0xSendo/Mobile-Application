@@ -86,6 +86,18 @@
             android:exported="true"
             android:label="DeveloperActivity"
             android:theme="@style/Theme.MyAcademate" />
+
+        <activity
+            android:name=".NotificationsActivity"
+            android:exported="true"
+            android:label="NotificationsActivity"
+            android:theme="@style/Theme.MyAcademate" />
+
+        <activity
+            android:name=".ExpenseActivity"
+            android:exported="true"
+            android:label="ExpenseActivity"
+            android:theme="@style/Theme.MyAcademate" />
     </application>
 
 </manifest>
