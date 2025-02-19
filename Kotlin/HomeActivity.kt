@@ -45,13 +45,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 
 class HomeActivity : ComponentActivity() {
-    private val taskViewModel: TaskViewModel by viewModels() // Initialize taskViewModel
+    private val taskViewModel: TaskViewModel by viewModels()
     private val expenseViewModel: ExpenseViewModel by viewModels {
         ExpenseViewModelFactory((applicationContext as Application))
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -80,13 +82,12 @@ class HomeActivity : ComponentActivity() {
 
             MaterialTheme(
                 colorScheme = customColors,
-                typography = MaterialTheme.typography // Use the default typography provided by Material Design
+                typography = MaterialTheme.typography
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = customColors.background
                 ) {
-                    // Pass taskViewModel to HomeScreen
                     HomeScreen(username, dbHelper, taskViewModel, expenseViewModel)
                 }
             }
@@ -95,10 +96,10 @@ class HomeActivity : ComponentActivity() {
 }
 
 class ExpenseViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ExpenseViewModel(application) as T
+            return ExpenseViewModel.getInstance(application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -119,7 +120,7 @@ fun HomeScreen(
     val user = dbHelper.getUserData(username)
     val latestTask = taskList.lastOrNull()
 
-    // Observe the expense list from the expenseViewModel
+    // Observe the expense list from the shared expenseViewModel
     val expenseList by expenseViewModel.expenseList.collectAsState()
     val latestExpense = expenseList.lastOrNull() // Get the latest expense
 
@@ -276,7 +277,7 @@ fun HomeScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 if (latestExpense != null) {
                     Text(
-                        text = "Latest Expense: ${latestExpense.name}",
+                        text = "${latestExpense.name}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
