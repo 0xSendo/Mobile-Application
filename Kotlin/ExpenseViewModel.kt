@@ -12,6 +12,8 @@ data class Expense(
     val amount: Double
 )
 
+
+
 class ExpenseViewModel(application: Application) : AndroidViewModel(application) {
     private val _expenseList = MutableStateFlow<List<Expense>>(emptyList())
     val expenseList: StateFlow<List<Expense>> get() = _expenseList
@@ -25,6 +27,17 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     fun deleteExpense(expense: Expense) {
         viewModelScope.launch {
             _expenseList.value = _expenseList.value.filter { it != expense }
+        }
+    }
+
+    companion object {
+        @Volatile
+        private var INSTANCE: ExpenseViewModel? = null
+
+        fun getInstance(application: Application): ExpenseViewModel {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: ExpenseViewModel(application).also { INSTANCE = it }
+            }
         }
     }
 }
