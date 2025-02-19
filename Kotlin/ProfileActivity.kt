@@ -1,7 +1,6 @@
-fix the placement of the profile and i also have double "save changes" button remove the other one and fix the birthdate field where i can actually input dates 
-
 package com.example.myacademate
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -10,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
 import com.example.myacademate.ui.theme.MyAcademateTheme
+import java.util.Calendar
 
 class ProfileActivity : ComponentActivity() {
     private var imageUri: Uri? by mutableStateOf(null)
@@ -76,6 +77,22 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
     var birthdate by remember { mutableStateOf(user?.birthdate ?: "") }
     val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+
+    if (showDatePicker) {
+        val datePicker = DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                birthdate = "$day/${month + 1}/$year"
+                showDatePicker = false
+            },
+            Calendar.getInstance().get(Calendar.YEAR),
+            Calendar.getInstance().get(Calendar.MONTH),
+            Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+        )
+        datePicker.show()
+    }
 
     Column(
         modifier = Modifier
@@ -101,7 +118,8 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Profile Picture",
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.size(120.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -144,10 +162,15 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
             label = { Text("Birthdate") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 8.dp)
+                .clickable(enabled = isEditing) { showDatePicker = true },
             enabled = isEditing,
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            placeholder = { Text("DD/MM/YYYY") }
         )
+
+
+
 
         Column(modifier = Modifier.fillMaxWidth()) {
             Button(
@@ -157,22 +180,31 @@ fun ProfileScreen(username: String, dbHelper: DatabaseHelper, imageUri: Uri?, on
                     .padding(bottom = 8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text(text = if (isEditing) "Save Changes" else "Edit Profile")
+                Text(text = if (isEditing) "Save Changes" else "OK")
             }
 
-            if (isEditing) {
-                Button(
-                    onClick = {
-                        dbHelper.updateUser(user?.id ?: 0, name, user?.lastName ?: "", course, user?.yearLevel ?: "", birthdate)
-                        isEditing = false
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) {
-                    Text(text = "Save Changes")
-                }
+            Button(
+                onClick = {
+                    if (isEditing) {
+                        dbHelper.updateUser(
+                            user?.id ?: 0,
+                            name,
+                            user?.lastName ?: "",
+                            course,
+                            user?.yearLevel ?: "",
+                            birthdate
+                        )
+                    }
+                    isEditing = !isEditing
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isEditing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Text(text = if (isEditing) "OK" else "Edit Profile")
             }
 
             Button(
