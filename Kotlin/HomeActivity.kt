@@ -1,5 +1,6 @@
 package com.example.myacademate
 
+import android.app.Application
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -33,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,10 +45,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 
 class HomeActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels() // Initialize taskViewModel
-
+    private val expenseViewModel: ExpenseViewModel by viewModels {
+        ExpenseViewModelFactory((applicationContext as Application))
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -82,21 +87,41 @@ class HomeActivity : ComponentActivity() {
                     color = customColors.background
                 ) {
                     // Pass taskViewModel to HomeScreen
-                    HomeScreen(username, dbHelper, taskViewModel)
+                    HomeScreen(username, dbHelper, taskViewModel, expenseViewModel)
                 }
             }
         }
     }
 }
 
+class ExpenseViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ExpenseViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskViewModel) {
+fun HomeScreen(
+    username: String,
+    dbHelper: DatabaseHelper,
+    taskViewModel: TaskViewModel,
+    expenseViewModel: ExpenseViewModel
+) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
     val taskList = taskViewModel.taskList
     val user = dbHelper.getUserData(username)
     val latestTask = taskList.lastOrNull()
+
+    // Observe the expense list from the expenseViewModel
+    val expenseList by expenseViewModel.expenseList.collectAsState()
+    val latestExpense = expenseList.lastOrNull() // Get the latest expense
 
     // Handle null or missing user data safely by providing fallback values
     val firstName = user?.firstName ?: "Unknown"
@@ -145,7 +170,8 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
             }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = {
-                // Handle notifications click
+                val intent = Intent(context, NotificationsActivity::class.java)
+                context.startActivity(intent)
             }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_notifications),
@@ -241,17 +267,31 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
                 .fillMaxWidth()
                 .padding(vertical = 8.dp)
                 .clickable {
-                    // Navigate to Expense Tracker
+                    val intent = Intent(context, ExpenseActivity::class.java)
+                    context.startActivity(intent)
                 },
             elevation = CardDefaults.cardElevation(4.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Track your expenses",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                if (latestExpense != null) {
+                    Text(
+                        text = "Latest Expense: ${latestExpense.name}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Amount: $${latestExpense.amount}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                } else {
+                    Text(
+                        text = "No expenses added yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
 
@@ -280,8 +320,9 @@ fun HomeScreen(username: String, dbHelper: DatabaseHelper, taskViewModel: TaskVi
                     val intent = Intent(context, PomodoroActivity::class.java)
                     context.startActivity(intent)
                 },
-                NavigationItem("Calendar", R.drawable.ic_calendar) {
-                    // Navigate to Calendar
+                NavigationItem("Expense", R.drawable.ic_calendar) {
+                    val intent = Intent(context, ExpenseActivity::class.java)
+                    context.startActivity(intent)
                 }
             )
             navigationItems.forEach { item ->
