@@ -1,32 +1,37 @@
 package com.example.myacademate
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 
 data class Expense(
     val name: String,
-    val amount: Double
+    val amount: Double,
+    val completionPercentage: Int = 0 // New field for progress
 )
 
 
 
-class ExpenseViewModel(application: Application) : AndroidViewModel(application) {
-    private val _expenseList = MutableStateFlow<List<Expense>>(emptyList())
-    val expenseList: StateFlow<List<Expense>> get() = _expenseList
+class ExpenseViewModel private constructor() : ViewModel() {
+    private val _expenseList = MutableStateFlow(mutableStateListOf<Expense>())
+    val expenseList: StateFlow<List<Expense>> = _expenseList
 
     fun addExpense(expense: Expense) {
-        viewModelScope.launch {
-            _expenseList.value = _expenseList.value + expense
-        }
+        _expenseList.value.add(expense)
     }
 
     fun deleteExpense(expense: Expense) {
-        viewModelScope.launch {
-            _expenseList.value = _expenseList.value.filter { it != expense }
+        _expenseList.value.remove(expense)
+    }
+
+    // New method to update completion percentage
+    fun updateExpenseCompletion(expense: Expense, newCompletionPercentage: Int) {
+        val index = _expenseList.value.indexOfFirst { it.name == expense.name && it.amount == expense.amount }
+        if (index != -1) {
+            val updatedExpense = expense.copy(completionPercentage = newCompletionPercentage)
+            _expenseList.value[index] = updatedExpense
         }
     }
 
@@ -36,7 +41,7 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
 
         fun getInstance(application: Application): ExpenseViewModel {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: ExpenseViewModel(application).also { INSTANCE = it }
+                INSTANCE ?: ExpenseViewModel().also { INSTANCE = it }
             }
         }
     }
