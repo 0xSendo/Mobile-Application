@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissions for reading images -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -45,11 +49,11 @@
             android:theme="@style/Theme.MyAcademate" />
 
         <!-- Task Manager -->
-        <activity android:name=".TaskManagerActivity"
+        <activity
+            android:name=".TaskManagerActivity"
             android:label="Task Manager"
             android:exported="true"
-            android:theme="@style/Theme.MyAcademate">
-        </activity>
+            android:theme="@style/Theme.MyAcademate" />
 
         <activity
             android:name=".ProgressTrackerActivity"
@@ -68,12 +72,12 @@
             android:label="Pomodoro"
             android:theme="@style/Theme.MyAcademate"
             android:exported="true" />
+
         <activity
             android:name=".TaskViewModel"
             android:exported="true"
             android:label="TaskViewModel"
             android:theme="@style/Theme.MyAcademate" />
-
 
         <activity
             android:name=".SettingsActivity"
