@@ -151,7 +151,6 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
         Spacer(modifier = Modifier.height(24.dp))
 
         // Save or Update Task Button
-        // In TaskManagerScreen
         Button(
             onClick = {
                 if (taskName.isNotEmpty() && courseCode.isNotEmpty() && dueTime.isNotEmpty()) {
@@ -277,6 +276,9 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
 
 @Composable
 fun TaskCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel, onEditTask: () -> Unit) {
+    var showCompleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -291,9 +293,9 @@ fun TaskCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel, onEditTask
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Mark as done icon
+                // Mark as done icon with confirmation dialog
                 IconButton(
-                    onClick = { taskViewModel.toggleTaskStatus(task.id) }
+                    onClick = { showCompleteDialog = true }
                 ) {
                     Icon(
                         painter = painterResource(id = if (task.isDone) R.drawable.ic_markdone else R.drawable.ic_markdone),
@@ -301,6 +303,7 @@ fun TaskCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel, onEditTask
                         modifier = Modifier.size(24.dp)
                     )
                 }
+
                 // Edit icon
                 IconButton(onClick = onEditTask) {
                     Icon(
@@ -309,9 +312,10 @@ fun TaskCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel, onEditTask
                         modifier = Modifier.size(24.dp)
                     )
                 }
-                // Remove task icon
+
+                // Remove task icon with confirmation dialog
                 IconButton(
-                    onClick = { taskViewModel.deleteTask(task.id) }
+                    onClick = { showDeleteDialog = true }
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_delete),
@@ -319,6 +323,58 @@ fun TaskCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel, onEditTask
                         modifier = Modifier.size(24.dp)
                     )
                 }
+            }
+
+            // Mark as Complete Confirmation Dialog
+            if (showCompleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showCompleteDialog = false },
+                    title = { Text("Mark Task as Complete") },
+                    text = { Text("Mark this task as complete?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                taskViewModel.toggleTaskStatus(task.id)
+                                showCompleteDialog = false
+                            }
+                        ) {
+                            Text("Yes")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showCompleteDialog = false }
+                        ) {
+                            Text("No")
+                        }
+                    }
+                )
+            }
+
+            // Delete Confirmation Dialog
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title = { Text("Delete Task") },
+                    text = { Text("Delete this task?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                taskViewModel.deleteTask(task.id)
+                                showDeleteDialog = false
+                            }
+                        ) {
+                            Text("Yes")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showDeleteDialog = false }
+                        ) {
+                            Text("No")
+                        }
+                    }
+                )
             }
         }
     }
