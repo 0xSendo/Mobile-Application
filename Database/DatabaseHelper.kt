@@ -7,6 +7,9 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
 import java.security.MessageDigest
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -47,16 +50,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 """
         db?.execSQL(createUserTable)
 
-
         val CREATE_TASK_TABLE = """
-            CREATE TABLE $TABLE_TASK (
-                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_USERNAME TEXT NOT NULL,
-                $COLUMN_SUBJECT_NAME TEXT NOT NULL,
-                $COLUMN_COURSE_CODE TEXT NOT NULL,
-                $COLUMN_DUE_TIME TEXT NOT NULL,
-                $COLUMN_IS_DONE INTEGER DEFAULT 0, 
-                FOREIGN KEY ($COLUMN_USERNAME) REFERENCES $TABLE_USER($COLUMN_USERNAME) ON DELETE CASCADE
+        CREATE TABLE $TABLE_TASK (
+            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_USERNAME TEXT NOT NULL,
+            $COLUMN_SUBJECT_NAME TEXT NOT NULL,
+            $COLUMN_COURSE_CODE TEXT NOT NULL,
+            $COLUMN_DUE_TIME TEXT NOT NULL,
+            $COLUMN_IS_DONE INTEGER DEFAULT 0,
+            created_time TEXT NOT NULL, 
+            FOREIGN KEY ($COLUMN_USERNAME) REFERENCES $TABLE_USER($COLUMN_USERNAME) ON DELETE CASCADE
         )
     """.trimIndent()
         Log.d("DatabaseHelper", "Executing CREATE_TASK_TABLE: $CREATE_TASK_TABLE")
@@ -64,7 +67,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        if (oldVersion < newVersion) {
+        if (oldVersion < 2) {
+            db?.execSQL("ALTER TABLE $TABLE_TASK ADD COLUMN created_time TEXT NOT NULL DEFAULT '2025-01-01 12:00 AM'")
             db?.execSQL("PRAGMA foreign_keys = OFF;") // Temporarily disable foreign keys to avoid constraint issues
             db?.execSQL("DROP TABLE IF EXISTS $TABLE_TASK") // Drop task table first
             db?.execSQL("DROP TABLE IF EXISTS $TABLE_USER") // Then drop user table
@@ -236,6 +240,18 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
 
 
+    fun logAllUsers() {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_USER", null)
+        while (cursor.moveToNext()) {
+            val username = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USERNAME))
+            val firstName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FIRST_NAME))
+            val lastName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LAST_NAME))
+            Log.d("DatabaseHelper", "User: $username, $firstName $lastName")
+        }
+        cursor.close()
+    }
+
 
 
     fun addTask(username: String, subjectName: String, courseCode: String, dueTime: String): Long {
@@ -245,6 +261,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             put(COLUMN_SUBJECT_NAME, subjectName)
             put(COLUMN_COURSE_CODE, courseCode)
             put(COLUMN_DUE_TIME, dueTime)
+            put("created_time", SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault()).format(Date())) // Add creation time
         }
         return db.insert(TABLE_TASK, null, contentValues)
     }
@@ -261,7 +278,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             val courseCode = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COURSE_CODE))
             val dueTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DUE_TIME))
             val isDone = cursor.getInt(cursor.getColumnIndexOrThrow("is_done")) == 1
-            taskList.add(Task(id, subjectName, courseCode, dueTime, isDone))
+            val createdTime = cursor.getString(cursor.getColumnIndexOrThrow("created_time"))
+            taskList.add(Task(id, subjectName, courseCode, dueTime, isDone, 0, createdTime))
         }
         cursor.close()
         return taskList
@@ -309,7 +327,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         val courseCode: String,
         val dueTime: String,
         val isDone: Boolean = false,
-        var completionPercentage: Int = 0
+        var completionPercentage: Int = 0,
+        val createdTime: String = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault()).format(
+            Date()
+        )
     )
 
 
