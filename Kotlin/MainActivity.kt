@@ -59,20 +59,21 @@ class MainActivity : ComponentActivity() {
 
             MaterialTheme(
                 colorScheme = customColors,
-                typography = Typography() // Create a default instance of Typography
+                typography = Typography()
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = customColors.background
                 ) {
                     LoginScreen(
-                        onLoginSuccess = {
-                            Log.d("MainActivity", "Login successful.")
-                            val intent = Intent(this@MainActivity, HomeActivity::class.java)
+                        onLoginSuccess = { username -> // Receive username here
+                            Log.d("MainActivity", "Login successful for: $username")
+                            val intent = Intent(this@MainActivity, HomeActivity::class.java).apply {
+                                putExtra("USERNAME", username) // Pass username to HomeActivity
+                            }
                             startActivity(intent)
                             finish()
                         },
-
                         onRegister = {
                             startActivity(Intent(this@MainActivity, RegisterActivity::class.java))
                         },
@@ -87,7 +88,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (String) -> Unit, // Modify to accept username as parameter
     onRegister: () -> Unit,
     dbHelper: DatabaseHelper
 ) {
@@ -154,7 +155,7 @@ fun LoginScreen(
                 onClick = {
                     isLoading = true
                     if (dbHelper.checkUserCredentials(username, password)) {
-                        onLoginSuccess()
+                        onLoginSuccess(username) // Pass the username here
                     } else {
                         errorMessage = "Invalid credentials. Try again."
                         Log.e("LoginActivity", "Failed login attempt: $username")
