@@ -8,14 +8,14 @@ import androidx.lifecycle.ViewModel
 class TaskViewModel : ViewModel() {
     // Wrap TaskRepository.taskList in a reactive MutableState
     private val _taskList = mutableStateOf(TaskRepository.taskList)
-    val taskList: List<DatabaseHelper.Task> by _taskList // Expose as reactive state
+    val taskList: List<DatabaseHelper.Task> by _taskList  // Expose as reactive state
 
     var editingTaskId by mutableStateOf<Int?>(null)
         private set
 
     fun addTask(task: DatabaseHelper.Task) {
         TaskRepository.addTask(task)
-        _taskList.value = TaskRepository.taskList
+        _taskList.value = TaskRepository.taskList // Update reactive state
     }
 
     fun updateTask(updatedTask: DatabaseHelper.Task) {
