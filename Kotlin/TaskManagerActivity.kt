@@ -1,9 +1,12 @@
 package com.example.myacademate
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,9 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,17 +28,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myacademate.ui.theme.MyAcademateTheme
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -73,6 +79,9 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
     var courseCode by remember { mutableStateOf("") }
     var dueTime by remember { mutableStateOf("") }
     var currentSorting by remember { mutableStateOf(Sorting.ClosestDeadline) }
+    var showFilterDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     // Separate tasks into upcoming and completed
     val upcomingTasks = taskList.filter { !it.isDone }
@@ -108,16 +117,41 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Due Time Input Field
+        // Due Time Input Field with Date and Time Picker (12-hour with AM/PM)
         OutlinedTextField(
             value = dueTime,
             onValueChange = { dueTime = it },
             label = { Text("Due Time") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    val calendar = Calendar.getInstance()
+                    DatePickerDialog(
+                        context,
+                        { _, year, month, day ->
+                            TimePickerDialog(
+                                context,
+                                { _, hourOfDay, minute ->
+                                    calendar.set(year, month, day, hourOfDay, minute)
+                                    dueTime = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault())
+                                        .format(calendar.time) // e.g., "2025-02-24 02:30 PM"
+                                },
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
+                                false // Use 12-hour clock (false = 12-hour, true = 24-hour)
+                            ).show()
+                        },
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH),
+                        calendar.get(Calendar.DAY_OF_MONTH)
+                    ).show()
+                },
+            enabled = false // Disable manual text input
         )
         Spacer(modifier = Modifier.height(24.dp))
 
         // Save or Update Task Button
+        // In TaskManagerScreen
         Button(
             onClick = {
                 if (taskName.isNotEmpty() && courseCode.isNotEmpty() && dueTime.isNotEmpty()) {
@@ -127,18 +161,21 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
                             id = TaskRepository.taskList.size + 1,
                             subjectName = taskName,
                             courseCode = courseCode,
-                            dueTime = dueTime
+                            dueTime = dueTime,
+                            createdTime = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault()).format(Date())
                         )
                         taskViewModel.addTask(newTask)
                     } else {
-                        // Update existing task
+                        // Update existing task (preserve original createdTime)
+                        val existingTask = taskList.first { it.id == editingTaskId }
                         val updatedTask = DatabaseHelper.Task(
                             id = editingTaskId,
                             subjectName = taskName,
                             courseCode = courseCode,
                             dueTime = dueTime,
-                            isDone = taskList.first { it.id == editingTaskId }.isDone,
-                            completionPercentage = taskList.first { it.id == editingTaskId }.completionPercentage
+                            isDone = existingTask.isDone,
+                            completionPercentage = existingTask.completionPercentage,
+                            createdTime = existingTask.createdTime
                         )
                         taskViewModel.updateTask(updatedTask)
                     }
@@ -159,7 +196,7 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
         Text(text = "Upcoming Tasks", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Sorting Buttons
+        // Single Filter Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -167,25 +204,41 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Button(
-                onClick = { currentSorting = Sorting.ClosestDeadline },
-                modifier = Modifier.weight(1f)
+                onClick = { showFilterDialog = true },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Closest")
+                Text("Filter (Current: ${currentSorting.name})")
             }
-            Spacer(Modifier.width(4.dp))
-            Button(
-                onClick = { currentSorting = Sorting.FarthestDeadline },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("Farthest")
-            }
-            Spacer(Modifier.width(4.dp))
-            Button(
-                onClick = { currentSorting = Sorting.AZ },
-                modifier = Modifier.weight(1f)
-            ) {
-                Text("A-Z")
-            }
+        }
+
+        // Filter Dialog
+        if (showFilterDialog) {
+            AlertDialog(
+                onDismissRequest = { showFilterDialog = false },
+                title = { Text("Sort Tasks By") },
+                text = {
+                    Column {
+                        TextButton(onClick = {
+                            currentSorting = Sorting.ClosestDeadline
+                            showFilterDialog = false
+                        }) { Text("Closest Deadline") }
+                        TextButton(onClick = {
+                            currentSorting = Sorting.FarthestDeadline
+                            showFilterDialog = false
+                        }) { Text("Farthest Deadline") }
+                        TextButton(onClick = {
+                            currentSorting = Sorting.AZ
+                            showFilterDialog = false
+                        }) { Text("A-Z") }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showFilterDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
 
         // LazyColumn for scrollable task list
@@ -271,10 +324,10 @@ fun TaskCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel, onEditTask
     }
 }
 
-// Helper function to parse date strings
+// Helper function to parse date strings with AM/PM
 fun parseDate(dateString: String): Date {
     return try {
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateString) ?: Date(0)
+        SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault()).parse(dateString) ?: Date(0)
     } catch (e: Exception) {
         Date(0) // Handle invalid dates as epoch time
     }
@@ -286,8 +339,8 @@ fun TaskManagerScreenPreview() {
     MyAcademateTheme {
         // Create a preview TaskViewModel with sample data
         val previewViewModel = TaskViewModel().apply {
-            addTask(DatabaseHelper.Task(1, "Math Assignment", "MATH101", "2023-12-31"))
-            addTask(DatabaseHelper.Task(2, "Science Project", "SCI202", "2023-11-15", isDone = true))
+            addTask(DatabaseHelper.Task(1, "Math Assignment", "MATH101", "2025-02-24 02:30 PM"))
+            addTask(DatabaseHelper.Task(2, "Science Project", "SCI202", "2025-11-15 09:00 AM", isDone = true))
         }
         TaskManagerScreen(previewViewModel)
     }
