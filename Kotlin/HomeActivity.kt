@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -105,7 +107,6 @@ class ExpenseViewModelFactory(private val application: Application) : ViewModelP
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -118,17 +119,20 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     val taskList = taskViewModel.taskList
     val user = dbHelper.getUserData(username)
-    val latestTask = taskList.lastOrNull()
-
-    // Observe the expense list from the shared expenseViewModel
+    val latestTask = taskList.lastOrNull { !it.isDone }
     val expenseList by expenseViewModel.expenseList.collectAsState()
-    val latestExpense = expenseList.lastOrNull() // Get the latest expense
+    val latestExpense = expenseList.lastOrNull()
 
     // Handle null or missing user data safely by providing fallback values
     val firstName = user?.firstName ?: "Unknown"
     val lastName = user?.lastName ?: "User"
     val course = user?.course ?: "N/A"
     val yearLevel = user?.yearLevel ?: "N/A"
+
+    var showTaskCompleteDialog by remember { mutableStateOf(false) }
+    var showTaskDeleteDialog by remember { mutableStateOf(false) }
+    var showExpensePaidDialog by remember { mutableStateOf(false) }
+    var showExpenseDeleteDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -197,8 +201,7 @@ fun HomeScreen(
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             },
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 focusedBorderColor = MaterialTheme.colorScheme.secondary,
@@ -243,6 +246,97 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        IconButton(
+                            onClick = { showTaskCompleteDialog = true }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_markdone),
+                                contentDescription = "Mark as Done",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(context, TaskManagerActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_edit),
+                                contentDescription = "Edit Task",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(
+                            onClick = { showTaskDeleteDialog = true }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_delete),
+                                contentDescription = "Delete Task",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                // Task Mark as Complete Confirmation Dialog
+                if (showTaskCompleteDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showTaskCompleteDialog = false },
+                        title = { Text("Mark Task as Complete") },
+                        text = { Text("Mark this task as complete?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    taskViewModel.toggleTaskStatus(latestTask.id)
+                                    showTaskCompleteDialog = false
+                                }
+                            ) {
+                                Text("Yes")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showTaskCompleteDialog = false }
+                            ) {
+                                Text("No")
+                            }
+                        }
+                    )
+                }
+
+                // Task Delete Confirmation Dialog
+                if (showTaskDeleteDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showTaskDeleteDialog = false },
+                        title = { Text("Delete Task") },
+                        text = { Text("Delete this task?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    taskViewModel.deleteTask(latestTask.id)
+                                    showTaskDeleteDialog = false
+                                }
+                            ) {
+                                Text("Yes")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showTaskDeleteDialog = false }
+                            ) {
+                                Text("No")
+                            }
+                        }
+                    )
                 }
             }
         } else {
@@ -263,21 +357,21 @@ fun HomeScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .clickable {
-                    val intent = Intent(context, ExpenseActivity::class.java)
-                    context.startActivity(intent)
-                },
-            elevation = CardDefaults.cardElevation(4.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                if (latestExpense != null) {
+        if (latestExpense != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .clickable {
+                        val intent = Intent(context, ExpenseActivity::class.java)
+                        context.startActivity(intent)
+                    },
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "${latestExpense.name}",
+                        text = latestExpense.name,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -286,14 +380,110 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.secondary
                     )
-                } else {
                     Text(
-                        text = "No expenses added yet",
+                        text = "Status: ${if (latestExpense.completionPercentage > 0) "Partially Paid (${latestExpense.completionPercentage}%)" else "To Be Paid"}",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        IconButton(
+                            onClick = { showExpensePaidDialog = true }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_markdone),
+                                contentDescription = "Mark as Paid",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(context, ExpenseActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_edit),
+                                contentDescription = "Edit Expense",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(
+                            onClick = { showExpenseDeleteDialog = true }
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_delete),
+                                contentDescription = "Delete Expense",
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                // Expense Mark as Paid Confirmation Dialog
+                if (showExpensePaidDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showExpensePaidDialog = false },
+                        title = { Text("Mark Expense as Paid") },
+                        text = { Text("Mark this expense as paid? This will delete it.") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    expenseViewModel.deleteExpense(latestExpense)
+                                    showExpensePaidDialog = false
+                                }
+                            ) {
+                                Text("Yes")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showExpensePaidDialog = false }
+                            ) {
+                                Text("No")
+                            }
+                        }
+                    )
+                }
+
+                // Expense Delete Confirmation Dialog
+                if (showExpenseDeleteDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showExpenseDeleteDialog = false },
+                        title = { Text("Delete Expense") },
+                        text = { Text("Delete this expense?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    expenseViewModel.deleteExpense(latestExpense)
+                                    showExpenseDeleteDialog = false
+                                }
+                            ) {
+                                Text("Yes")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showExpenseDeleteDialog = false }
+                            ) {
+                                Text("No")
+                            }
+                        }
                     )
                 }
             }
+        } else {
+            Text(
+                text = "No expenses added yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
