@@ -1,10 +1,14 @@
 package com.example.myacademate
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -39,8 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import coil.compose.rememberAsyncImagePainter
 import com.example.myacademate.ui.theme.MyAcademateTheme
 import java.util.Calendar
@@ -84,14 +90,30 @@ fun ProfileScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
+    // Image picker launcher
     val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
+            // Grant persistent permission to access the URI
+            context.contentResolver.takePersistableUriPermission(
+                it,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
             imageUri = it // Update the local state
             // Save to SharedPreferences
             context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
                 .edit()
                 .putString("profile_image_uri_$username", it.toString())
                 .apply()
+            Log.d("ProfileActivity", "Image URI saved: $it")
+        } ?: Log.e("ProfileActivity", "No URI returned")
+    }
+
+    // Permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            getContent.launch("image/*")
+        } else {
+            Log.e("ProfileActivity", "Permission denied")
         }
     }
 
@@ -125,7 +147,13 @@ fun ProfileScreen(
         ) {
             if (imageUri != null) {
                 Image(
-                    painter = rememberAsyncImagePainter(imageUri),
+                    painter = rememberAsyncImagePainter(
+                        model = imageUri,
+                        placeholder = painterResource(id = R.drawable.ic_profile),
+                        error = painterResource(id = R.drawable.ic_profile),
+                        onSuccess = { Log.d("ProfileActivity", "Image loaded successfully") },
+                        onError = { Log.e("ProfileActivity", "Image load failed: ${it.result.throwable}") }
+                    ),
                     contentDescription = "Profile Picture",
                     modifier = Modifier
                         .size(120.dp)
@@ -144,7 +172,16 @@ fun ProfileScreen(
 
         Button(
             onClick = {
-                getContent.launch("image/*") // Launch image picker
+                val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Manifest.permission.READ_MEDIA_IMAGES
+                } else {
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                }
+                if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED) {
+                    permissionLauncher.launch(permission)
+                } else {
+                    getContent.launch("image/*")
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
