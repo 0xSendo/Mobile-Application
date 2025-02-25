@@ -102,6 +102,20 @@
             android:exported="true"
             android:label="ExpenseActivity"
             android:theme="@style/Theme.MyAcademate" />
+
+        <activity
+            android:name=".MathChallengeActivity"
+            android:exported="true"
+            android:label="MathChallengeActivity"
+            android:theme="@style/Theme.MyAcademate"
+            />
+
+        <activity
+            android:name=".GuessNumberActivity"
+            android:exported="true"
+            android:label="GuessActivity"
+            android:theme="@style/Theme.MyAcademate"
+            />
     </application>
 
 </manifest>
