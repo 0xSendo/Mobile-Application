@@ -45,13 +45,14 @@ class ProgressTrackerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val username = intent.getStringExtra("USERNAME") ?: "" // Retrieve username from intent
         setContent {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF292929) // background: Dark Gray #292929
                 ) {
-                    ProgressTrackerScreen(taskViewModel)
+                    ProgressTrackerScreen(taskViewModel, username)
                 }
             }
         }
@@ -59,7 +60,7 @@ class ProgressTrackerActivity : ComponentActivity() {
 }
 
 @Composable
-fun ProgressTrackerScreen(taskViewModel: TaskViewModel) {
+fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String) {
     val taskList: List<DatabaseHelper.Task> = taskViewModel.taskList
     var filterOption by remember { mutableStateOf(FilterOption.ALPHABETICAL) }
     val context = LocalContext.current
@@ -124,19 +125,23 @@ fun ProgressTrackerScreen(taskViewModel: TaskViewModel) {
             val navigationItems = listOf(
                 NavigationItem("Home", R.drawable.ic_home) {
                     val intent = Intent(context, HomeActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
                 NavigationItem("Tasks", R.drawable.ic_tasks) {
                     val intent = Intent(context, TaskManagerActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
                 NavigationItem("Progress", R.drawable.ic_progress) { /* Current screen, no action */ },
                 NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
                     val intent = Intent(context, PomodoroActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
                 NavigationItem("Expense", R.drawable.ic_calendar) {
                     val intent = Intent(context, ExpenseActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 }
             )
@@ -325,6 +330,6 @@ fun ProgressTrackerScreenPreview() {
             addTask(DatabaseHelper.Task(2, "Science Project", "SCI202", "2023-11-15", completionPercentage = 50))
             addTask(DatabaseHelper.Task(3, "History Essay", "HIST303", "2023-10-30", completionPercentage = 100, isDone = true))
         }
-        ProgressTrackerScreen(previewViewModel)
+        ProgressTrackerScreen(previewViewModel, "previewUser")
     }
 }
