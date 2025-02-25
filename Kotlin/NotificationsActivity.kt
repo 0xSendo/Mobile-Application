@@ -30,13 +30,14 @@ class NotificationsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val username = intent.getStringExtra("USERNAME") ?: ""
         setContent {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF292929) // background: Dark Gray #292929
                 ) {
-                    NotificationsScreen(taskViewModel)
+                    NotificationsScreen(taskViewModel, username)
                 }
             }
         }
@@ -44,27 +45,26 @@ class NotificationsActivity : ComponentActivity() {
 }
 
 @Composable
-fun NotificationsScreen(taskViewModel: TaskViewModel) {
+fun NotificationsScreen(taskViewModel: TaskViewModel, username: String) {
     val taskList = taskViewModel.taskList // Synced with TaskManager
     val currentTime = Date()
     val sdf = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault())
     val todayDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(currentTime)
 
-    // Filter tasks based on due time and completion status
+    // Filter and map tasks to notifications with "Overdue" and "Due" tags
     val notifications = taskList.filter { !it.isDone }.mapNotNull { task ->
-        val dueDateTime = try {
-            sdf.parse(task.dueTime) ?: Date(0)
-        } catch (e: Exception) {
-            Date(0) // Fallback for invalid dates
-        }
+        val dueDateTime = parseDate(task.dueTime)
+        val createdDateTime = parseDate(task.createdTime)
         val dueDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(dueDateTime)
 
         when {
-            dueDateTime.before(currentTime) -> // Due time is before now = overdue
+            dueDateTime.before(currentTime) -> // Past due date
                 "Overdue: ${task.subjectName} (${task.courseCode}) - Due: ${task.dueTime} (Created: ${task.createdTime})"
-            dueDateStr == todayDateStr -> // Due today = due today
+            dueDateStr == todayDateStr -> // Due today
                 "Due Today: ${task.subjectName} (${task.courseCode}) - Due: ${task.dueTime} (Created: ${task.createdTime})"
-            else -> null // Future tasks or completed tasks are ignored
+            dueDateTime.after(currentTime) -> // Due in the future
+                "Due: ${task.subjectName} (${task.courseCode}) - Due: ${task.dueTime} (Created: ${task.createdTime})"
+            else -> null // Invalid or completed tasks
         }
     }
 
@@ -86,9 +86,10 @@ fun NotificationsScreen(taskViewModel: TaskViewModel) {
                         elevation = CardDefaults.cardElevation(4.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = when {
-                                notification.startsWith("Overdue") -> Color(0xFF808080) // secondary: Gray #808080 for overdue
-                                notification.startsWith("Due Today") -> Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b for due today
-                                else -> Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                                notification.startsWith("Overdue") -> Color(0xFF808080) // Gray for overdue
+                                notification.startsWith("Due Today") -> Color(0xFF1B1B1B) // Darker Gray for due today
+                                notification.startsWith("Due") -> Color(0xFF404040) // Slightly lighter gray for future due
+                                else -> Color(0xFF1B1B1B) // Default
                             }
                         )
                     ) {
@@ -97,9 +98,10 @@ fun NotificationsScreen(taskViewModel: TaskViewModel) {
                             style = androidx.compose.material3.Typography().bodyLarge,
                             modifier = Modifier.padding(16.dp),
                             color = when {
-                                notification.startsWith("Overdue") -> Color(0xFFFFA31A) // primary: Orange #ffa31a for overdue
-                                notification.startsWith("Due Today") -> Color(0xFFFFFFFF) // onSurface: White #ffffff for due today
-                                else -> Color(0xFFFFFFFF) // onSurface: White #ffffff
+                                notification.startsWith("Overdue") -> Color(0xFFFFA31A) // Orange for overdue
+                                notification.startsWith("Due Today") -> Color(0xFFFFFFFF) // White for due today
+                                notification.startsWith("Due") -> Color(0xFFB0B0B0) // Light gray for future due
+                                else -> Color(0xFFFFFFFF) // Default white
                             }
                         )
                     }
@@ -115,12 +117,13 @@ fun NotificationsScreen(taskViewModel: TaskViewModel) {
         }
     }
 
-    // Helper function to parse date strings
     fun parseDate(dateString: String): Date {
         return try {
             SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault()).parse(dateString) ?: Date(0)
         } catch (e: Exception) {
-            Date(0) // Handle invalid dates as epoch time
+            Date(0) // Fallback for invalid dates
         }
     }
 }
+
+
