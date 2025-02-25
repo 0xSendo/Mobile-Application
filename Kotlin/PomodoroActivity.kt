@@ -1,5 +1,6 @@
 package com.example.myacademate
 
+import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
 import androidx.activity.ComponentActivity
@@ -21,11 +22,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +45,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +70,7 @@ fun PomodoroScreen() {
     val coroutineScope = rememberCoroutineScope()
     val totalDuration = 25 * 60 * 1000L
     val progress = remember { Animatable(1f) }
+    val context = LocalContext.current
 
     // Pulsing animation for the timer circle
     val pulseScale by rememberInfiniteTransition().animateFloat(
@@ -104,104 +111,152 @@ fun PomodoroScreen() {
         }
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF292929)) // background: Dark Gray #292929
     ) {
-        // Subtle wave background animation
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val waveAmplitude = 10.dp.toPx()
-            val waveFrequency = 0.01f
-            for (i in 0..size.height.toInt() step 20) {
-                drawLine(
-                    start = Offset(0f, i.toFloat() + waveAmplitude * kotlin.math.sin(waveOffset + i * waveFrequency)),
-                    end = Offset(size.width, i.toFloat() + waveAmplitude * kotlin.math.sin(waveOffset + i * waveFrequency)),
-                    color = Color(0xFF1B1B1B).copy(alpha = 0.2f), // surface: Darker Gray #1b1b1b with transparency
-                    strokeWidth = 2.dp.toPx()
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+        ) {
+            // Subtle wave background animation
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val waveAmplitude = 10.dp.toPx()
+                val waveFrequency = 0.01f
+                for (i in 0..size.height.toInt() step 20) {
+                    drawLine(
+                        start = Offset(0f, i.toFloat() + waveAmplitude * kotlin.math.sin(waveOffset + i * waveFrequency)),
+                        end = Offset(size.width, i.toFloat() + waveAmplitude * kotlin.math.sin(waveOffset + i * waveFrequency)),
+                        color = Color(0xFF1B1B1B).copy(alpha = 0.2f), // surface: Darker Gray #1b1b1b with transparency
+                        strokeWidth = 2.dp.toPx()
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Pomodoro Timer",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFA31A) // primary: Orange #ffa31a
                 )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Circular Countdown Timer with pulsing effect
+                Box(contentAlignment = Alignment.Center) {
+                    Canvas(
+                        modifier = Modifier
+                            .size(220.dp)
+                            .padding(16.dp)
+                            .scale(if (isRunning) pulseScale else 1f)
+                    ) {
+                        drawArc(
+                            color = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                            startAngle = -90f,
+                            sweepAngle = progress.value * 360f,
+                            useCenter = false,
+                            style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                        // Background arc for contrast
+                        drawArc(
+                            color = Color(0xFF808080), // secondary: Gray #808080
+                            startAngle = -90f,
+                            sweepAngle = 360f,
+                            useCenter = false,
+                            style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
+                        )
+                    }
+                    Text(
+                        text = formatTime(timeLeft),
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Control Buttons with scale animation
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    AnimatedButton(
+                        text = "Start",
+                        onClick = { isRunning = true },
+                        enabled = !isRunning,
+                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                        contentColor = Color(0xFFFFFFFF), // onPrimary: White #ffffff
+                        coroutineScope = coroutineScope
+                    )
+
+                    AnimatedButton(
+                        text = "Reset",
+                        onClick = {
+                            isRunning = false
+                            timeLeft = totalDuration
+                            timer?.cancel()
+                            coroutineScope.launch {
+                                progress.snapTo(1f)
+                            }
+                        },
+                        enabled = true,
+                        containerColor = Color(0xFF808080), // secondary: Gray #808080
+                        contentColor = Color(0xFFFFFFFF), // onSecondary: White #ffffff
+                        coroutineScope = coroutineScope
+                    )
+                }
             }
         }
 
-        Column(
+        // Bottom Navigation
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .height(80.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Pomodoro Timer",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFFFA31A) // primary: Orange #ffa31a
+            val navigationItems = listOf(
+                NavigationItem("Home", R.drawable.ic_home) {
+                    val intent = Intent(context, HomeActivity::class.java)
+                    context.startActivity(intent)
+                },
+                NavigationItem("Tasks", R.drawable.ic_tasks) {
+                    val intent = Intent(context, TaskManagerActivity::class.java)
+                    context.startActivity(intent)
+                },
+                NavigationItem("Progress", R.drawable.ic_progress) {
+                    val intent = Intent(context, ProgressTrackerActivity::class.java)
+                    context.startActivity(intent)
+                },
+                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) { /* Current screen, no action */ },
+                NavigationItem("Expense", R.drawable.ic_calendar) {
+                    val intent = Intent(context, ExpenseActivity::class.java)
+                    context.startActivity(intent)
+                }
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Circular Countdown Timer with pulsing effect
-            Box(contentAlignment = Alignment.Center) {
-                Canvas(
-                    modifier = Modifier
-                        .size(220.dp)
-                        .padding(16.dp)
-                        .scale(if (isRunning) pulseScale else 1f)
+            navigationItems.forEach { item ->
+                IconButton(
+                    onClick = { item.action() },
+                    modifier = Modifier.size(56.dp)
                 ) {
-                    drawArc(
-                        color = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                        startAngle = -90f,
-                        sweepAngle = progress.value * 360f,
-                        useCenter = false,
-                        style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                    // Background arc for contrast
-                    drawArc(
-                        color = Color(0xFF808080), // secondary: Gray #808080
-                        startAngle = -90f,
-                        sweepAngle = 360f,
-                        useCenter = false,
-                        style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
+                    Icon(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = item.label,
+                        modifier = Modifier.size(32.dp),
+                        tint = Color(0xFFFFFFFF) // onBackground: White #ffffff
                     )
                 }
-                Text(
-                    text = formatTime(timeLeft),
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFFFFF) // onSurface: White #ffffff
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Control Buttons with scale animation
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(16.dp)
-            ) {
-                AnimatedButton(
-                    text = "Start",
-                    onClick = { isRunning = true },
-                    enabled = !isRunning,
-                    containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                    contentColor = Color(0xFFFFFFFF), // onPrimary: White #ffffff
-                    coroutineScope = coroutineScope
-                )
-
-                AnimatedButton(
-                    text = "Reset",
-                    onClick = {
-                        isRunning = false
-                        timeLeft = totalDuration
-                        timer?.cancel()
-                        coroutineScope.launch {
-                            progress.snapTo(1f)
-                        }
-                    },
-                    enabled = true,
-                    containerColor = Color(0xFF808080), // secondary: Gray #808080
-                    contentColor = Color(0xFFFFFFFF), // onSecondary: White #ffffff
-                    coroutineScope = coroutineScope
-                )
             }
         }
     }
@@ -214,7 +269,7 @@ fun AnimatedButton(
     enabled: Boolean,
     containerColor: Color,
     contentColor: Color,
-    coroutineScope: CoroutineScope // Pass the coroutine scope as a parameter
+    coroutineScope: CoroutineScope
 ) {
     val scale = remember { Animatable(1f) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -242,6 +297,8 @@ fun AnimatedButton(
         Text(text)
     }
 }
+
+
 
 fun formatTime(millis: Long): String {
     val minutes = (millis / 1000) / 60
