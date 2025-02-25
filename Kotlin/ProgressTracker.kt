@@ -1,5 +1,6 @@
 package com.example.myacademate
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -19,6 +21,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myacademate.ui.theme.MyAcademateTheme
@@ -40,7 +46,7 @@ class ProgressTrackerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyAcademateTheme { // Keeping this for typography, but colors are hardcoded below
+            MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF292929) // background: Dark Gray #292929
@@ -56,46 +62,97 @@ class ProgressTrackerActivity : ComponentActivity() {
 fun ProgressTrackerScreen(taskViewModel: TaskViewModel) {
     val taskList: List<DatabaseHelper.Task> = taskViewModel.taskList
     var filterOption by remember { mutableStateOf(FilterOption.ALPHABETICAL) }
+    val context = LocalContext.current
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Progress Tracker",
-            style = androidx.compose.material3.Typography().titleLarge,
-            color = Color(0xFFFFFFFF) // onBackground: White #ffffff
-        )
-        Spacer(modifier = Modifier.height(20.dp))
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            item {
+                Text(
+                    text = "Progress Tracker",
+                    style = androidx.compose.material3.Typography().titleLarge,
+                    color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+            }
 
-        FilterSection(
-            filterOption = filterOption,
-            onFilterSelected = { filterOption = it }
-        )
-        Spacer(modifier = Modifier.height(10.dp))
+            item {
+                FilterSection(
+                    filterOption = filterOption,
+                    onFilterSelected = { filterOption = it }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
-        Text(
-            text = "Progress List",
-            style = androidx.compose.material3.Typography().bodyMedium,
-            color = Color(0xFFFFFFFF) // onBackground: White #ffffff
-        )
-        Spacer(modifier = Modifier.height(10.dp))
+            item {
+                Text(
+                    text = "Progress List",
+                    style = androidx.compose.material3.Typography().bodyMedium,
+                    color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
 
-        val filteredTasks = when (filterOption) {
-            FilterOption.ALPHABETICAL -> taskList.sortedBy { it.subjectName }
-            FilterOption.FARTHEST_DEADLINE -> taskList.sortedByDescending { it.dueTime }
-            FilterOption.CLOSEST_DEADLINE -> taskList.sortedBy { it.dueTime }
-        }
+            val filteredTasks = when (filterOption) {
+                FilterOption.ALPHABETICAL -> taskList.sortedBy { it.subjectName }
+                FilterOption.FARTHEST_DEADLINE -> taskList.sortedByDescending { it.dueTime }
+                FilterOption.CLOSEST_DEADLINE -> taskList.sortedBy { it.dueTime }
+            }
 
-        if (filteredTasks.isNotEmpty()) {
-            LazyColumn {
+            if (filteredTasks.isNotEmpty()) {
                 items(filteredTasks) { task ->
                     ProgressCard(task = task, taskViewModel = taskViewModel)
                 }
+            } else {
+                item {
+                    Text(
+                        text = "No tasks available",
+                        style = androidx.compose.material3.Typography().bodyMedium,
+                        color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                    )
+                }
             }
-        } else {
-            Text(
-                text = "No tasks available",
-                style = androidx.compose.material3.Typography().bodyMedium,
-                color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+        }
+
+        // Bottom Navigation
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val navigationItems = listOf(
+                NavigationItem("Home", R.drawable.ic_home) {
+                    val intent = Intent(context, HomeActivity::class.java)
+                    context.startActivity(intent)
+                },
+                NavigationItem("Tasks", R.drawable.ic_tasks) {
+                    val intent = Intent(context, TaskManagerActivity::class.java)
+                    context.startActivity(intent)
+                },
+                NavigationItem("Progress", R.drawable.ic_progress) { /* Current screen, no action */ },
+                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
+                    val intent = Intent(context, PomodoroActivity::class.java)
+                    context.startActivity(intent)
+                },
+                NavigationItem("Expense", R.drawable.ic_calendar) {
+                    val intent = Intent(context, ExpenseActivity::class.java)
+                    context.startActivity(intent)
+                }
             )
+            navigationItems.forEach { item ->
+                IconButton(
+                    onClick = { item.action() },
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = item.label,
+                        modifier = Modifier.size(32.dp),
+                        tint = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                    )
+                }
+            }
         }
     }
 }
@@ -256,6 +313,8 @@ fun ProgressCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel) {
         }
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable
