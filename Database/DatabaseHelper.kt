@@ -199,7 +199,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     fun getUserData(username: String): User? {
         val db = this.readableDatabase
         val trimmedUsername = username.trim()
-        val cursor: Cursor = db.rawQuery(
+        val cursor = db.rawQuery(
             "SELECT * FROM $TABLE_USER WHERE $COLUMN_USERNAME = ? COLLATE NOCASE",
             arrayOf(trimmedUsername)
         )
