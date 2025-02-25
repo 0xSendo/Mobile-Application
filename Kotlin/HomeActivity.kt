@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import coil.compose.rememberAsyncImagePainter
+import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class HomeActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels()
@@ -74,11 +77,13 @@ class HomeActivity : ComponentActivity() {
         profileViewModel.loadProfileImageUri(this, username)
 
         setContent {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = Color(0xFF292929) // background: Dark Gray #292929
-            ) {
-                HomeScreen(username, dbHelper, taskViewModel, expenseViewModel, profileViewModel)
+            MyAcademateTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color(0xFF292929)
+                ) {
+                    HomeScreen(username, dbHelper, taskViewModel, expenseViewModel, profileViewModel)
+                }
             }
         }
     }
@@ -105,6 +110,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
+    var highlightedNavItem by remember { mutableStateOf<String?>(null) } // Track highlighted nav item
     val taskList = taskViewModel.taskList
     val user = dbHelper.getUserData(username)
     val latestTask = taskList.lastOrNull { !it.isDone }
@@ -123,12 +129,25 @@ fun HomeScreen(
     var showExpensePaidDialog by remember { mutableStateOf(false) }
     var showExpenseDeleteDialog by remember { mutableStateOf(false) }
 
+    // Search logic
+    LaunchedEffect(searchQuery) {
+        highlightedNavItem = when {
+            searchQuery.isBlank() -> null
+            "task manager".contains(searchQuery.lowercase()) || "tasks".contains(searchQuery.lowercase()) -> "Tasks"
+            "progress".contains(searchQuery.lowercase()) -> "Progress"
+            "pomodoro".contains(searchQuery.lowercase()) -> "Pomodoro"
+            "expense".contains(searchQuery.lowercase()) -> "Expense"
+            "home".contains(searchQuery.lowercase()) -> "Home"
+            else -> null
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Profile Section
+        // Profile Section (unchanged)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -165,7 +184,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(CircleShape),
-                    tint = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                    tint = Color(0xFFFFFFFF)
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -173,25 +192,25 @@ fun HomeScreen(
                 Text(
                     text = "$firstName $lastName",
                     style = androidx.compose.material3.Typography().titleLarge,
-                    color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                    color = Color(0xFFFFFFFF)
                 )
                 Text(
                     text = "$course - Year $yearLevel",
                     style = androidx.compose.material3.Typography().titleMedium,
-                    color = Color(0xFFFFA31A) // primary: Orange #ffa31a
+                    color = Color(0xFFFFA31A)
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = {
                 val intent = Intent(context, NotificationsActivity::class.java)
-                intent.putExtra("USERNAME", username) // Pass username
+                intent.putExtra("USERNAME", username)
                 context.startActivity(intent)
             }) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_notifications),
                     contentDescription = "Notifications",
                     modifier = Modifier.size(28.dp),
-                    tint = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                    tint = Color(0xFFFFFFFF)
                 )
             }
         }
@@ -202,33 +221,33 @@ fun HomeScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            label = { Text("Search", color = Color(0xFFFFFFFF)) }, // onBackground: White #ffffff
+            label = { Text("Search", color = Color(0xFFFFFFFF)) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search Icon",
-                    tint = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                    tint = Color(0xFFFFFFFF)
                 )
             },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Color(0xFF808080), // secondary: Gray #808080
-                unfocusedBorderColor = Color(0xFFFFFFFF), // onBackground: White #ffffff
-                cursorColor = Color(0xFFFFFFFF), // onBackground: White #ffffff
-                focusedLabelColor = Color(0xFF808080), // secondary: Gray #808080
-                unfocusedLabelColor = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                focusedBorderColor = Color(0xFF808080),
+                unfocusedBorderColor = Color(0xFFFFFFFF),
+                cursorColor = Color(0xFFFFFFFF),
+                focusedLabelColor = Color(0xFF808080),
+                unfocusedLabelColor = Color(0xFFFFFFFF)
             ),
-            textStyle = androidx.compose.material3.Typography().bodyLarge.copy(color = Color(0xFFFFFFFF)) // onBackground: White #ffffff
+            textStyle = androidx.compose.material3.Typography().bodyLarge.copy(color = Color(0xFFFFFFFF))
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Task Manager Section
+        // Task Manager Section (unchanged)
         Text(
             text = "Task Manager",
             style = androidx.compose.material3.Typography().headlineSmall,
-            color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+            color = Color(0xFFFFFFFF)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -239,116 +258,100 @@ fun HomeScreen(
                     .padding(vertical = 8.dp)
                     .clickable {
                         val intent = Intent(context, TaskManagerActivity::class.java)
-                        intent.putExtra("USERNAME", username) // Pass username
+                        intent.putExtra("USERNAME", username)
                         context.startActivity(intent)
                     },
                 elevation = CardDefaults.cardElevation(4.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)) // surface: Darker Gray #1b1b1b
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = latestTask.subjectName,
                         style = androidx.compose.material3.Typography().bodyLarge,
-                        color = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                        color = Color(0xFFFFFFFF)
                     )
                     Text(
                         text = "Due ${formatDueDate(latestTask.dueTime)}",
                         style = androidx.compose.material3.Typography().bodyMedium,
-                        color = Color(0xFF808080) // secondary: Gray #808080
+                        color = Color(0xFF808080)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.align(Alignment.End)
                     ) {
-                        IconButton(
-                            onClick = { showTaskCompleteDialog = true }
-                        ) {
+                        IconButton(onClick = { showTaskCompleteDialog = true }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_markdone),
                                 contentDescription = "Mark as Done",
                                 modifier = Modifier.size(24.dp),
-                                tint = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                                tint = Color(0xFFFFFFFF)
                             )
                         }
-                        IconButton(
-                            onClick = {
-                                val intent = Intent(context, TaskManagerActivity::class.java)
-                                intent.putExtra("USERNAME", username) // Pass username
-                                context.startActivity(intent)
-                            }
-                        ) {
+                        IconButton(onClick = {
+                            val intent = Intent(context, TaskManagerActivity::class.java)
+                            intent.putExtra("USERNAME", username)
+                            context.startActivity(intent)
+                        }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_edit),
                                 contentDescription = "Edit Task",
                                 modifier = Modifier.size(24.dp),
-                                tint = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                                tint = Color(0xFFFFFFFF)
                             )
                         }
-                        IconButton(
-                            onClick = { showTaskDeleteDialog = true }
-                        ) {
+                        IconButton(onClick = { showTaskDeleteDialog = true }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_delete),
                                 contentDescription = "Delete Task",
                                 modifier = Modifier.size(24.dp),
-                                tint = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                                tint = Color(0xFFFFFFFF)
                             )
                         }
                     }
                 }
 
-                // Task Mark as Complete Confirmation Dialog
                 if (showTaskCompleteDialog) {
                     AlertDialog(
                         onDismissRequest = { showTaskCompleteDialog = false },
-                        title = { Text("Mark Task as Complete", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                        text = { Text("Mark this task as complete?", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+                        title = { Text("Mark Task as Complete", color = Color(0xFFFFFFFF)) },
+                        text = { Text("Mark this task as complete?", color = Color(0xFFFFFFFF)) },
                         confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    taskViewModel.toggleTaskStatus(latestTask.id)
-                                    showTaskCompleteDialog = false
-                                }
-                            ) {
-                                Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = {
+                                taskViewModel.toggleTaskStatus(latestTask.id)
+                                showTaskCompleteDialog = false
+                            }) {
+                                Text("Yes", color = Color(0xFFFFA31A))
                             }
                         },
                         dismissButton = {
-                            TextButton(
-                                onClick = { showTaskCompleteDialog = false }
-                            ) {
-                                Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = { showTaskCompleteDialog = false }) {
+                                Text("No", color = Color(0xFFFFA31A))
                             }
                         },
-                        containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                        containerColor = Color(0xFF1B1B1B)
                     )
                 }
 
-                // Task Delete Confirmation Dialog
                 if (showTaskDeleteDialog) {
                     AlertDialog(
                         onDismissRequest = { showTaskDeleteDialog = false },
-                        title = { Text("Delete Task", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                        text = { Text("Delete this task?", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+                        title = { Text("Delete Task", color = Color(0xFFFFFFFF)) },
+                        text = { Text("Delete this task?", color = Color(0xFFFFFFFF)) },
                         confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    taskViewModel.deleteTask(latestTask.id)
-                                    showTaskDeleteDialog = false
-                                }
-                            ) {
-                                Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = {
+                                taskViewModel.deleteTask(latestTask.id)
+                                showTaskDeleteDialog = false
+                            }) {
+                                Text("Yes", color = Color(0xFFFFA31A))
                             }
                         },
                         dismissButton = {
-                            TextButton(
-                                onClick = { showTaskDeleteDialog = false }
-                            ) {
-                                Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = { showTaskDeleteDialog = false }) {
+                                Text("No", color = Color(0xFFFFA31A))
                             }
                         },
-                        containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                        containerColor = Color(0xFF1B1B1B)
                     )
                 }
             }
@@ -356,17 +359,17 @@ fun HomeScreen(
             Text(
                 text = "No tasks available",
                 style = androidx.compose.material3.Typography().bodyMedium,
-                color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                color = Color(0xFFFFFFFF)
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Expense Tracker Section
+        // Expense Tracker Section (unchanged)
         Text(
             text = "Expense Tracker",
             style = androidx.compose.material3.Typography().headlineSmall,
-            color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+            color = Color(0xFFFFFFFF)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -377,121 +380,105 @@ fun HomeScreen(
                     .padding(vertical = 8.dp)
                     .clickable {
                         val intent = Intent(context, ExpenseActivity::class.java)
-                        intent.putExtra("USERNAME", username) // Pass username
+                        intent.putExtra("USERNAME", username)
                         context.startActivity(intent)
                     },
                 elevation = CardDefaults.cardElevation(4.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)) // surface: Darker Gray #1b1b1b
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = latestExpense.name,
                         style = androidx.compose.material3.Typography().bodyLarge,
-                        color = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                        color = Color(0xFFFFFFFF)
                     )
                     Text(
                         text = "Amount: $${latestExpense.amount}",
                         style = androidx.compose.material3.Typography().bodyMedium,
-                        color = Color(0xFF808080) // secondary: Gray #808080
+                        color = Color(0xFF808080)
                     )
                     Text(
                         text = "Status: ${if (latestExpense.completionPercentage > 0) "Partially Paid (${latestExpense.completionPercentage}%)" else "To Be Paid"}",
                         style = androidx.compose.material3.Typography().bodyMedium,
-                        color = Color(0xFF808080) // secondary: Gray #808080
+                        color = Color(0xFF808080)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.align(Alignment.End)
                     ) {
-                        IconButton(
-                            onClick = { showExpensePaidDialog = true }
-                        ) {
+                        IconButton(onClick = { showExpensePaidDialog = true }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_markdone),
                                 contentDescription = "Mark as Paid",
                                 modifier = Modifier.size(24.dp),
-                                tint = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                                tint = Color(0xFFFFFFFF)
                             )
                         }
-                        IconButton(
-                            onClick = {
-                                val intent = Intent(context, ExpenseActivity::class.java)
-                                intent.putExtra("USERNAME", username) // Pass username
-                                context.startActivity(intent)
-                            }
-                        ) {
+                        IconButton(onClick = {
+                            val intent = Intent(context, ExpenseActivity::class.java)
+                            intent.putExtra("USERNAME", username)
+                            context.startActivity(intent)
+                        }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_edit),
                                 contentDescription = "Edit Expense",
                                 modifier = Modifier.size(24.dp),
-                                tint = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                                tint = Color(0xFFFFFFFF)
                             )
                         }
-                        IconButton(
-                            onClick = { showExpenseDeleteDialog = true }
-                        ) {
+                        IconButton(onClick = { showExpenseDeleteDialog = true }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_delete),
                                 contentDescription = "Delete Expense",
                                 modifier = Modifier.size(24.dp),
-                                tint = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                                tint = Color(0xFFFFFFFF)
                             )
                         }
                     }
                 }
 
-                // Expense Mark as Paid Confirmation Dialog
                 if (showExpensePaidDialog) {
                     AlertDialog(
                         onDismissRequest = { showExpensePaidDialog = false },
-                        title = { Text("Mark Expense as Paid", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                        text = { Text("Mark this expense as paid? This will delete it.", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+                        title = { Text("Mark Expense as Paid", color = Color(0xFFFFFFFF)) },
+                        text = { Text("Mark this expense as paid? This will delete it.", color = Color(0xFFFFFFFF)) },
                         confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    expenseViewModel.deleteExpense(latestExpense)
-                                    showExpensePaidDialog = false
-                                }
-                            ) {
-                                Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = {
+                                expenseViewModel.deleteExpense(latestExpense)
+                                showExpensePaidDialog = false
+                            }) {
+                                Text("Yes", color = Color(0xFFFFA31A))
                             }
                         },
                         dismissButton = {
-                            TextButton(
-                                onClick = { showExpensePaidDialog = false }
-                            ) {
-                                Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = { showExpensePaidDialog = false }) {
+                                Text("No", color = Color(0xFFFFA31A))
                             }
                         },
-                        containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                        containerColor = Color(0xFF1B1B1B)
                     )
                 }
 
-                // Expense Delete Confirmation Dialog
                 if (showExpenseDeleteDialog) {
                     AlertDialog(
                         onDismissRequest = { showExpenseDeleteDialog = false },
-                        title = { Text("Delete Expense", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                        text = { Text("Delete this expense?", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+                        title = { Text("Delete Expense", color = Color(0xFFFFFFFF)) },
+                        text = { Text("Delete this expense?", color = Color(0xFFFFFFFF)) },
                         confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    expenseViewModel.deleteExpense(latestExpense)
-                                    showExpenseDeleteDialog = false
-                                }
-                            ) {
-                                Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = {
+                                expenseViewModel.deleteExpense(latestExpense)
+                                showExpenseDeleteDialog = false
+                            }) {
+                                Text("Yes", color = Color(0xFFFFA31A))
                             }
                         },
                         dismissButton = {
-                            TextButton(
-                                onClick = { showExpenseDeleteDialog = false }
-                            ) {
-                                Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                            TextButton(onClick = { showExpenseDeleteDialog = false }) {
+                                Text("No", color = Color(0xFFFFA31A))
                             }
                         },
-                        containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                        containerColor = Color(0xFF1B1B1B)
                     )
                 }
             }
@@ -499,14 +486,80 @@ fun HomeScreen(
             Text(
                 text = "No expenses added yet",
                 style = androidx.compose.material3.Typography().bodyMedium,
-                color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                color = Color(0xFFFFFFFF)
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Bottom Navigation
+        // Games Section (unchanged)
+        Text(
+            text = "Games",
+            style = androidx.compose.material3.Typography().headlineSmall,
+            color = Color(0xFFFFFFFF)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Card(
+                modifier = Modifier
+                    .size(150.dp)
+                    .clickable {
+                        val intent = Intent(context, MathChallengeActivity::class.java)
+                        intent.putExtra("USERNAME", username)
+                        context.startActivity(intent)
+                    },
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Math Challenge",
+                        style = androidx.compose.material3.Typography().bodyLarge,
+                        color = Color(0xFFFFFFFF)
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier
+                    .size(150.dp)
+                    .clickable {
+                        val intent = Intent(context, GuessNumberActivity::class.java)
+                        intent.putExtra("USERNAME", username)
+                        context.startActivity(intent)
+                    },
+                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Guess the Number",
+                        style = androidx.compose.material3.Typography().bodyLarge,
+                        color = Color(0xFFFFFFFF)
+                    )
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.weight(1f))
+
+        // Navigation Bar with Highlighting
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -515,38 +568,45 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             val navigationItems = listOf(
-                NavigationItem("Home", R.drawable.ic_home) { /* Current screen, no action */ },
+                NavigationItem("Home", R.drawable.ic_home) { /* Current screen */ },
                 NavigationItem("Tasks", R.drawable.ic_tasks) {
                     val intent = Intent(context, TaskManagerActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 },
                 NavigationItem("Progress", R.drawable.ic_progress) {
                     val intent = Intent(context, ProgressTrackerActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 },
                 NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
                     val intent = Intent(context, PomodoroActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 },
                 NavigationItem("Expense", R.drawable.ic_calendar) {
                     val intent = Intent(context, ExpenseActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 }
             )
+
             navigationItems.forEach { item ->
+                val isHighlighted = highlightedNavItem == item.label
                 IconButton(
                     onClick = { item.action() },
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            if (isHighlighted) Color(0xFFFFA31A).copy(alpha = 0.3f) else Color.Transparent,
+                            shape = CircleShape
+                        )
                 ) {
                     Icon(
                         painter = painterResource(id = item.icon),
                         contentDescription = item.label,
                         modifier = Modifier.size(32.dp),
-                        tint = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                        tint = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
                     )
                 }
             }
@@ -561,6 +621,5 @@ data class NavigationItem(
 )
 
 fun formatDueDate(dueTime: String): String {
-    // Simple placeholder; you can improve this as needed
     return dueTime
 }
