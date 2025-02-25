@@ -88,7 +88,7 @@ fun DeveloperScreen(username: String) {
                 .padding(horizontal = 8.dp)
         ) {
             Text(
-                text = "Developed by XYZ Team",
+                text = "Developed by Paul Abellana",
                 style = androidx.compose.material3.Typography().bodyLarge.copy(fontWeight = FontWeight.Bold),
                 color = Color(0xFFFFA31A), // Primary: Orange #FFA31A
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -104,14 +104,14 @@ fun DeveloperScreen(username: String) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Lead Developer: Alex Thornton",
+                text = "Lead Developer: Paul Abellana",
                 style = androidx.compose.material3.Typography().bodyLarge,
                 color = Color(0xFFFFFFFF), // OnBackground: White #FFFFFF
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
             Text(
-                text = "Contact: support@xyzteam.com",
+                text = "Contact: paulabellana4@gmail.com",
                 style = androidx.compose.material3.Typography().bodyMedium,
                 color = Color(0xFF808080), // Secondary: Gray #808080
                 modifier = Modifier.padding(bottom = 8.dp)
