@@ -1,7 +1,9 @@
 package com.example.myacademate
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -20,7 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -43,12 +47,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import coil.compose.rememberAsyncImagePainter
 
 class HomeActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels()
@@ -129,6 +136,16 @@ fun HomeScreen(
     val course = user?.course ?: "N/A"
     val yearLevel = user?.yearLevel ?: "N/A"
 
+    // Load profile image URI from SharedPreferences
+    val profileImageUri by remember {
+        mutableStateOf(
+            Uri.parse(
+                context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
+                    .getString("profile_image_uri_$username", null)
+            )
+        )
+    }
+
     var showTaskCompleteDialog by remember { mutableStateOf(false) }
     var showTaskDeleteDialog by remember { mutableStateOf(false) }
     var showExpensePaidDialog by remember { mutableStateOf(false) }
@@ -155,11 +172,30 @@ fun HomeScreen(
                     context.startActivity(intent)
                 }
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_profile),
-                contentDescription = "Profile Picture",
-                modifier = Modifier.size(56.dp)
-            )
+            if (profileImageUri != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(
+                        model = profileImageUri,
+                        placeholder = painterResource(id = R.drawable.ic_profile),
+                        error = painterResource(id = R.drawable.ic_profile),
+                        onError = { Log.e("HomeActivity", "Image load failed: ${it.result.throwable}") }
+                    ),
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Default Profile Picture",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape),
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
