@@ -92,6 +92,7 @@ fun ProfileScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showPictureOptionsDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) } // New state for delete confirmation
 
     // Image picker launcher
     val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -183,8 +184,7 @@ fun ProfileScreen(
             onValueChange = { if (isEditing) firstName = it },
             label = { Text("First Name") },
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+                .fillMaxWidth(),
             enabled = isEditing,
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
         )
@@ -262,7 +262,7 @@ fun ProfileScreen(
             }
 
             Button(
-                onClick = { /* Handle Delete Account Action */ },
+                onClick = { showDeleteAccountDialog = true }, // Show confirmation dialog
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
@@ -342,6 +342,45 @@ fun ProfileScreen(
             },
             title = { Text("Log Out") },
             text = { Text("Are you sure you want to log out?") }
+        )
+    }
+
+    // Delete Account Confirmation Dialog
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAccountDialog = false },
+            title = { Text("Delete Account") },
+            text = { Text("Are you sure you want to delete your account? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Delete the user from the database
+                        val deleted = dbHelper.deleteUser(username)
+                        if (deleted) {
+                            Log.d("ProfileActivity", "Account deleted for username: $username")
+                            // Clear profile picture from SharedPreferences
+                            profileViewModel.setProfileImageUri(context, username, null)
+                            // Navigate to MainActivity (login screen)
+                            val intent = Intent(context, MainActivity::class.java)
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                            context.startActivity(intent)
+                            (context as ComponentActivity).finish() // Close ProfileActivity
+                        } else {
+                            Log.e("ProfileActivity", "Failed to delete account for username: $username")
+                        }
+                        showDeleteAccountDialog = false
+                    }
+                ) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteAccountDialog = false }
+                ) {
+                    Text("No")
+                }
+            }
         )
     }
 }
