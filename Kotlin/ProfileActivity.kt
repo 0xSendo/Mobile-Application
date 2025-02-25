@@ -18,8 +18,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,6 +31,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -406,5 +409,61 @@ fun ProfileScreen(
             },
             containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
         )
+    }
+
+    // Bottom Navigation
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .align(Alignment.BottomCenter), // Align Row at the bottom
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val navigationItems = listOf(
+                NavigationItem("Home", R.drawable.ic_home) {
+                    val intent = Intent(context, HomeActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
+                    context.startActivity(intent)
+                },
+                NavigationItem("Tasks", R.drawable.ic_tasks) {
+                    val intent = Intent(context, TaskManagerActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
+                    context.startActivity(intent)
+                },
+                NavigationItem("Progress", R.drawable.ic_progress) {
+                    val intent = Intent(context, ProgressTrackerActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
+                    context.startActivity(intent)
+                },
+                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
+                    val intent = Intent(context, PomodoroActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
+                    context.startActivity(intent)
+                },
+                NavigationItem("Expense", R.drawable.ic_calendar) {
+                    val intent = Intent(context, ExpenseActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
+                    context.startActivity(intent)
+                }
+            )
+            navigationItems.forEach { item ->
+                IconButton(
+                    onClick = { item.action() },
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = item.icon),
+                        contentDescription = item.label,
+                        modifier = Modifier.size(32.dp),
+                        tint = Color(0xFFFFFFFF)
+                    )
+                }
+            }
+        }
     }
 }
