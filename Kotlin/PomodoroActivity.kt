@@ -56,14 +56,15 @@ import kotlinx.coroutines.launch
 class PomodoroActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val username = intent.getStringExtra("USERNAME") ?: ""
         setContent {
-            PomodoroScreen()
+            PomodoroScreen(username)
         }
     }
 }
 
 @Composable
-fun PomodoroScreen() {
+fun PomodoroScreen(username: String) {
     var timeLeft by remember { mutableStateOf(25 * 60 * 1000L) } // 25 minutes
     var isRunning by remember { mutableStateOf(false) }
     var timer: CountDownTimer? by remember { mutableStateOf(null) }
@@ -229,19 +230,23 @@ fun PomodoroScreen() {
             val navigationItems = listOf(
                 NavigationItem("Home", R.drawable.ic_home) {
                     val intent = Intent(context, HomeActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
                 NavigationItem("Tasks", R.drawable.ic_tasks) {
                     val intent = Intent(context, TaskManagerActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
-                NavigationItem("Progress", R.drawable.ic_progress) {
-                    val intent = Intent(context, ProgressTrackerActivity::class.java)
+                NavigationItem("Progress", R.drawable.ic_progress) { /* Current screen, no action */ },
+                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
+                    val intent = Intent(context, PomodoroActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
-                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) { /* Current screen, no action */ },
                 NavigationItem("Expense", R.drawable.ic_calendar) {
                     val intent = Intent(context, ExpenseActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 }
             )
