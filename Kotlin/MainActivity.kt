@@ -105,7 +105,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Welcome to MyAcademate",
+            text = "Welcome to Academate",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp),
             color = MaterialTheme.colorScheme.onBackground
