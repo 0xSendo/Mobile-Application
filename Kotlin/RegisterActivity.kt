@@ -1,10 +1,12 @@
 package com.example.myacademate
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -30,7 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import java.util.Calendar
 
 class RegisterActivity : ComponentActivity() {
     private lateinit var dbHelper: DatabaseHelper
@@ -55,7 +59,7 @@ class RegisterActivity : ComponentActivity() {
 
             MaterialTheme(
                 colorScheme = customColors,
-                typography = Typography() // Create a default instance of Typography
+                typography = Typography()
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -71,7 +75,7 @@ class RegisterActivity : ComponentActivity() {
                         onNavigateToLogin = {
                             val intent = Intent(this, MainActivity::class.java)
                             startActivity(intent)
-                            finish() // Optional: to close RegisterActivity
+                            finish()
                         }
                     )
                 }
@@ -87,6 +91,7 @@ fun RegisterScreen(
     dbHelper: DatabaseHelper,
     onNavigateToLogin: () -> Unit
 ) {
+    val context = LocalContext.current
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -94,9 +99,10 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var course by remember { mutableStateOf("") }
     var yearLevel by remember { mutableStateOf("") }
-    var birthdate by remember { mutableStateOf("") } // New field for birthdate
+    var birthdate by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    var showSuccessDialog by remember { mutableStateOf(false) } // State for showing success dialog
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -211,24 +217,37 @@ fun RegisterScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Birthdate (New field)
+        // Birthdate with Calendar (Read-only, clickable)
         OutlinedTextField(
             value = birthdate,
-            onValueChange = {
-                birthdate = it
-                errorMessage = ""
-            },
+            onValueChange = { /* Do nothing, read-only */ },
             label = { Text("Birthdate (MM/DD/YYYY)") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showDatePicker = true },
+            enabled = false, // Prevent manual edits
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 focusedBorderColor = MaterialTheme.colorScheme.secondary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                cursorColor = MaterialTheme.colorScheme.onBackground,
-                focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+                disabledBorderColor = MaterialTheme.colorScheme.onBackground,
+                disabledTextColor = MaterialTheme.colorScheme.onBackground,
+                disabledLabelColor = MaterialTheme.colorScheme.onBackground
             ),
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
         )
+        if (showDatePicker) {
+            val calendar = Calendar.getInstance()
+            DatePickerDialog(
+                context,
+                { _, year, month, day ->
+                    birthdate = "${month + 1}/$day/$year" // Format as MM/DD/YYYY
+                    showDatePicker = false
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+            ).show()
+        }
         Spacer(modifier = Modifier.height(8.dp))
 
         // Password
@@ -274,17 +293,15 @@ fun RegisterScreen(
         // Register Button
         Button(
             onClick = {
-                // Trim all input fields
                 val trimmedFirstName = firstName.trim()
                 val trimmedLastName = lastName.trim()
                 val trimmedUsername = username.trim()
                 val trimmedCourse = course.trim()
                 val trimmedYearLevel = yearLevel.trim()
-                val trimmedBirthdate = birthdate.trim() // Trim birthdate
+                val trimmedBirthdate = birthdate.trim()
                 val trimmedPassword = password.trim()
                 val trimmedConfirmPassword = confirmPassword.trim()
 
-                // Validate inputs
                 when {
                     trimmedFirstName.isEmpty() || trimmedLastName.isEmpty() || trimmedUsername.isEmpty() ||
                             trimmedCourse.isEmpty() || trimmedYearLevel.isEmpty() || trimmedPassword.isEmpty() ||
@@ -298,6 +315,7 @@ fun RegisterScreen(
                         errorMessage = "Passwords do not match."
                     }
                     else -> {
+                        Log.d("RegisterActivity", "Attempting to register: $trimmedUsername, $trimmedCourse, $trimmedYearLevel")
                         val result = dbHelper.addUser(
                             trimmedFirstName,
                             trimmedLastName,
@@ -305,12 +323,14 @@ fun RegisterScreen(
                             trimmedYearLevel,
                             trimmedUsername,
                             trimmedPassword,
-                            trimmedBirthdate // Pass the birthdate
+                            trimmedBirthdate
                         )
                         if (result == -1L) {
-                            errorMessage = "Username already taken."
+                            errorMessage = "Username already taken or registration failed."
+                            Log.e("RegisterActivity", "Registration failed for $trimmedUsername")
                         } else {
-                            onRegisterSuccess()
+                            showSuccessDialog = true
+                            Log.d("RegisterActivity", "User registered: $trimmedUsername")
                         }
                     }
                 }
@@ -330,12 +350,10 @@ fun RegisterScreen(
             )
         }
 
-        // "Already have an account? Log in here" button
+        // Navigate to Login
         Spacer(modifier = Modifier.height(16.dp))
         Button(
-            onClick = {
-                onNavigateToLogin() // Navigate to Login screen
-            },
+            onClick = { onNavigateToLogin() },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
@@ -351,7 +369,7 @@ fun RegisterScreen(
                 Button(
                     onClick = {
                         showSuccessDialog = false
-                        onNavigateToLogin() // Navigate to Login screen
+                        onNavigateToLogin()
                     }
                 ) {
                     Text("OK")
