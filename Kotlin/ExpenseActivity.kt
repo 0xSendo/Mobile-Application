@@ -64,11 +64,19 @@ class ExpenseActivity : ComponentActivity() {
     }
 }
 
+enum class ExpenseFilterOption {
+    ALPHABETICAL,
+    HIGHEST_AMOUNT,
+    LOWEST_AMOUNT
+}
+
 @Composable
 fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
     val expenseList by expenseViewModel.expenseList.collectAsState()
     var expenseName by remember { mutableStateOf("") }
     var expenseAmount by remember { mutableStateOf("") }
+    var filterOption by remember { mutableStateOf(ExpenseFilterOption.ALPHABETICAL) }
+    var showFilterDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Column(
@@ -123,6 +131,21 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
             }
 
             item {
+                // Filter Button
+                Button(
+                    onClick = { showFilterDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF808080), // secondary: Gray #808080
+                        contentColor = Color(0xFFFFFFFF) // onSecondary: White #ffffff
+                    )
+                ) {
+                    Text("Filter (Current: ${filterOption.name.replace("_", " ").lowercase().capitalize()})")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            item {
                 // List of Expenses
                 Text(
                     text = "Expenses",
@@ -132,8 +155,14 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
                 )
             }
 
-            if (expenseList.isNotEmpty()) {
-                items(expenseList) { expense ->
+            val filteredExpenses = when (filterOption) {
+                ExpenseFilterOption.ALPHABETICAL -> expenseList.sortedBy { it.name }
+                ExpenseFilterOption.HIGHEST_AMOUNT -> expenseList.sortedByDescending { it.amount }
+                ExpenseFilterOption.LOWEST_AMOUNT -> expenseList.sortedBy { it.amount }
+            }
+
+            if (filteredExpenses.isNotEmpty()) {
+                items(filteredExpenses) { expense ->
                     ExpenseItem(expense, expenseViewModel)
                 }
             } else {
@@ -159,9 +188,14 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
                 NavigationItem("Home", R.drawable.ic_home) {
                     val intent = Intent(context, HomeActivity::class.java)
                     intent.putExtra("USERNAME", username) // Pass username
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     context.startActivity(intent)
                 },
-                NavigationItem("Tasks", R.drawable.ic_tasks) { /* Current screen, no action */ },
+                NavigationItem("Tasks", R.drawable.ic_tasks) {
+                    val intent = Intent(context, TaskManagerActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
+                    context.startActivity(intent)
+                },
                 NavigationItem("Progress", R.drawable.ic_progress) {
                     val intent = Intent(context, ProgressTrackerActivity::class.java)
                     intent.putExtra("USERNAME", username) // Pass username
@@ -172,11 +206,7 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
                     intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
-                NavigationItem("Expense", R.drawable.ic_calendar) {
-                    val intent = Intent(context, ExpenseActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
-                    context.startActivity(intent)
-                }
+                NavigationItem("Expense", R.drawable.ic_calendar) { /* Current screen, no action */ }
             )
             navigationItems.forEach { item ->
                 IconButton(
@@ -192,6 +222,37 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
                 }
             }
         }
+    }
+
+    // Filter Dialog
+    if (showFilterDialog) {
+        AlertDialog(
+            onDismissRequest = { showFilterDialog = false },
+            title = { Text("Sort Expenses By", color = Color(0xFFFFFFFF)) }, // onBackground: White #ffffff
+            text = {
+                Column {
+                    TextButton(onClick = {
+                        filterOption = ExpenseFilterOption.ALPHABETICAL
+                        showFilterDialog = false
+                    }) { Text("Alphabetical (A-Z)", color = Color(0xFFFFFFFF)) } // onBackground: White #ffffff
+                    TextButton(onClick = {
+                        filterOption = ExpenseFilterOption.HIGHEST_AMOUNT
+                        showFilterDialog = false
+                    }) { Text("Highest Amount", color = Color(0xFFFFFFFF)) } // onBackground: White #ffffff
+                    TextButton(onClick = {
+                        filterOption = ExpenseFilterOption.LOWEST_AMOUNT
+                        showFilterDialog = false
+                    }) { Text("Lowest Amount", color = Color(0xFFFFFFFF)) } // onBackground: White #ffffff
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showFilterDialog = false }) {
+                    Text("Cancel", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                }
+            },
+            containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+        )
     }
 }
 
