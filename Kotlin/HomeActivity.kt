@@ -1,9 +1,7 @@
 package com.example.myacademate
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -62,6 +60,7 @@ class HomeActivity : ComponentActivity() {
     private val expenseViewModel: ExpenseViewModel by viewModels {
         ExpenseViewModelFactory((applicationContext as Application))
     }
+    private val profileViewModel: ProfileViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +73,9 @@ class HomeActivity : ComponentActivity() {
         // Fetch user data for debugging
         val user = dbHelper.getUserData(username)
         Log.d("HomeActivity", "User data fetched in HomeActivity: $user")
+
+        // Load initial profile picture URI
+        profileViewModel.loadProfileImageUri(this, username)
 
         setContent {
             val customColors = darkColorScheme(
@@ -97,7 +99,7 @@ class HomeActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = customColors.background
                 ) {
-                    HomeScreen(username, dbHelper, taskViewModel, expenseViewModel)
+                    HomeScreen(username, dbHelper, taskViewModel, expenseViewModel, profileViewModel)
                 }
             }
         }
@@ -120,7 +122,8 @@ fun HomeScreen(
     username: String,
     dbHelper: DatabaseHelper,
     taskViewModel: TaskViewModel,
-    expenseViewModel: ExpenseViewModel
+    expenseViewModel: ExpenseViewModel,
+    profileViewModel: ProfileViewModel
 ) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
@@ -136,15 +139,8 @@ fun HomeScreen(
     val course = user?.course ?: "N/A"
     val yearLevel = user?.yearLevel ?: "N/A"
 
-    // Load profile image URI from SharedPreferences
-    val profileImageUri by remember {
-        mutableStateOf(
-            Uri.parse(
-                context.getSharedPreferences("profile_prefs", Context.MODE_PRIVATE)
-                    .getString("profile_image_uri_$username", null)
-            )
-        )
-    }
+    // Observe the profileImageUri from ProfileViewModel
+    val profileImageUri by profileViewModel::profileImageUri
 
     var showTaskCompleteDialog by remember { mutableStateOf(false) }
     var showTaskDeleteDialog by remember { mutableStateOf(false) }
