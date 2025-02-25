@@ -17,12 +17,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.myacademate.ui.theme.MyAcademateTheme
@@ -50,7 +51,7 @@ class ExpenseActivity : ComponentActivity() {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color(0xFF292929) // background: Dark Gray #292929
                 ) {
                     ExpenseTrackerScreen(expenseViewModel)
                 }
@@ -74,15 +75,17 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel) {
         OutlinedTextField(
             value = expenseName,
             onValueChange = { expenseName = it },
-            label = { Text("Expense Name") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Expense Name", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFFFFFF)) // onSurface: White #ffffff
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = expenseAmount,
             onValueChange = { expenseAmount = it },
-            label = { Text("Amount") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Amount", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFFFFFF)) // onSurface: White #ffffff
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -96,7 +99,11 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel) {
                     expenseAmount = ""
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
+            )
         ) {
             Text("Add Expense")
         }
@@ -106,8 +113,9 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel) {
         // List of Expenses
         Text(
             text = "Expenses",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(bottom = 8.dp)
+            style = androidx.compose.material3.Typography().titleLarge,
+            modifier = Modifier.padding(bottom = 8.dp),
+            color = Color(0xFFFFFFFF) // onBackground: White #ffffff
         )
         if (expenseList.isNotEmpty()) {
             LazyColumn {
@@ -118,7 +126,8 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel) {
         } else {
             Text(
                 text = "No expenses added yet",
-                style = MaterialTheme.typography.bodyMedium
+                style = androidx.compose.material3.Typography().bodyMedium,
+                color = Color(0xFFFFFFFF) // onBackground: White #ffffff
             )
         }
     }
@@ -133,7 +142,8 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)) // surface: Darker Gray #1b1b1b
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -144,24 +154,28 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
                 Column {
                     Text(
                         text = expense.name,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = androidx.compose.material3.Typography().bodyLarge,
+                        color = Color(0xFFFFFFFF) // onSurface: White #ffffff
                     )
                     Text(
                         text = "$${expense.amount}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = androidx.compose.material3.Typography().bodyMedium,
+                        color = Color(0xFFFFFFFF) // onSurface: White #ffffff
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(onClick = { showPaidDialog = true }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_markdone),
-                            contentDescription = "Mark as Paid"
+                            contentDescription = "Mark as Paid",
+                            tint = Color(0xFFFFA31A) // primary: Orange #ffa31a
                         )
                     }
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_delete),
-                            contentDescription = "Delete Expense"
+                            contentDescription = "Delete Expense",
+                            tint = Color(0xFFFFA31A) // primary: Orange #ffa31a
                         )
                     }
                 }
@@ -172,7 +186,9 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
             // Progress Bar
             LinearProgressIndicator(
                 progress = expense.completionPercentage / 100f,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                trackColor = Color(0xFF808080) // secondary: Gray #808080
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -184,25 +200,41 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
             ) {
                 Button(
                     onClick = { expenseViewModel.updateExpenseCompletion(expense, 25) },
-                    enabled = expense.completionPercentage < 25
+                    enabled = expense.completionPercentage < 25,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
+                    )
                 ) {
                     Text("25%")
                 }
                 Button(
                     onClick = { expenseViewModel.updateExpenseCompletion(expense, 50) },
-                    enabled = expense.completionPercentage < 50
+                    enabled = expense.completionPercentage < 50,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
+                    )
                 ) {
                     Text("50%")
                 }
                 Button(
                     onClick = { expenseViewModel.updateExpenseCompletion(expense, 75) },
-                    enabled = expense.completionPercentage < 75
+                    enabled = expense.completionPercentage < 75,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
+                    )
                 ) {
                     Text("75%")
                 }
                 Button(
                     onClick = { expenseViewModel.updateExpenseCompletion(expense, 100) },
-                    enabled = expense.completionPercentage < 100
+                    enabled = expense.completionPercentage < 100,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
+                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
+                    )
                 ) {
                     Text("100%")
                 }
@@ -212,8 +244,8 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("Delete Expense") },
-                    text = { Text("Delete this expense?") },
+                    title = { Text("Delete Expense", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+                    text = { Text("Delete this expense?", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -221,16 +253,17 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
                                 showDeleteDialog = false
                             }
                         ) {
-                            Text("Yes")
+                            Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
                         }
                     },
                     dismissButton = {
                         TextButton(
                             onClick = { showDeleteDialog = false }
                         ) {
-                            Text("No")
+                            Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
                         }
-                    }
+                    },
+                    containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
                 )
             }
 
@@ -238,8 +271,8 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
             if (showPaidDialog) {
                 AlertDialog(
                     onDismissRequest = { showPaidDialog = false },
-                    title = { Text("Mark Expense as Paid") },
-                    text = { Text("Mark this expense as paid? This will delete it.") },
+                    title = { Text("Mark Expense as Paid", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+                    text = { Text("Mark this expense as paid? This will delete it.", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -247,16 +280,17 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
                                 showPaidDialog = false
                             }
                         ) {
-                            Text("Yes")
+                            Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
                         }
                     },
                     dismissButton = {
                         TextButton(
                             onClick = { showPaidDialog = false }
                         ) {
-                            Text("No")
+                            Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
                         }
-                    }
+                    },
+                    containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
                 )
             }
         }
