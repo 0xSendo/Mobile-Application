@@ -4,9 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,11 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,7 +34,7 @@ class NotificationsActivity : ComponentActivity() {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color(0xFF292929) // background: Dark Gray #292929
                 ) {
                     NotificationsScreen(taskViewModel)
                 }
@@ -55,110 +50,77 @@ fun NotificationsScreen(taskViewModel: TaskViewModel) {
     val sdf = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault())
     val todayDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(currentTime)
 
-    // Filter tasks to show all overdue and due-today notifications
-    val notifications = taskList.filter { task ->
-        !task.isDone && run {
-            val dueDateTime = parseDate(task.dueTime)
-            val dueDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(dueDateTime)
-            dueDateTime.before(currentTime) || dueDateStr == todayDateStr
+    // Filter tasks based on due time and completion status
+    val notifications = taskList.filter { !it.isDone }.mapNotNull { task ->
+        val dueDateTime = try {
+            sdf.parse(task.dueTime) ?: Date(0)
+        } catch (e: Exception) {
+            Date(0) // Fallback for invalid dates
         }
-    }.map { task ->
-        val dueDateTime = parseDate(task.dueTime)
         val dueDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(dueDateTime)
-        val message = if (dueDateTime.before(currentTime)) {
-            "Overdue: ${task.subjectName} (${task.courseCode}) - Due: ${task.dueTime} (Created: ${task.createdTime})"
-        } else {
-            "Due Today: ${task.subjectName} (${task.courseCode}) - Due: ${task.dueTime} (Created: ${task.createdTime})"
+
+        when {
+            dueDateTime.before(currentTime) -> // Due time is before now = overdue
+                "Overdue: ${task.subjectName} (${task.courseCode}) - Due: ${task.dueTime} (Created: ${task.createdTime})"
+            dueDateStr == todayDateStr -> // Due today = due today
+                "Due Today: ${task.subjectName} (${task.courseCode}) - Due: ${task.dueTime} (Created: ${task.createdTime})"
+            else -> null // Future tasks or completed tasks are ignored
         }
-        Pair(task, message) // Pair task with its notification message
     }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(text = "Notifications", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = "Notifications",
+            style = androidx.compose.material3.Typography().titleLarge,
+            color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         if (notifications.isNotEmpty()) {
             LazyColumn {
-                items(notifications, key = { it.first.id }) { (task, notification) ->
-                    NotificationCard(
-                        task = task,
-                        notification = notification,
-                        onMarkAsRead = { taskViewModel.toggleTaskStatus(task.id) },
-                        onDelete = { taskViewModel.deleteTask(task.id) }
-                    )
+                items(notifications) { notification ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = when {
+                                notification.startsWith("Overdue") -> Color(0xFF808080) // secondary: Gray #808080 for overdue
+                                notification.startsWith("Due Today") -> Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b for due today
+                                else -> Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                            }
+                        )
+                    ) {
+                        Text(
+                            text = notification,
+                            style = androidx.compose.material3.Typography().bodyLarge,
+                            modifier = Modifier.padding(16.dp),
+                            color = when {
+                                notification.startsWith("Overdue") -> Color(0xFFFFA31A) // primary: Orange #ffa31a for overdue
+                                notification.startsWith("Due Today") -> Color(0xFFFFFFFF) // onSurface: White #ffffff for due today
+                                else -> Color(0xFFFFFFFF) // onSurface: White #ffffff
+                            }
+                        )
+                    }
                 }
             }
         } else {
             Text(
                 text = "No new notifications",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(16.dp)
+                style = androidx.compose.material3.Typography().bodyMedium,
+                modifier = Modifier.padding(16.dp),
+                color = Color(0xFFFFFFFF) // onBackground: White #ffffff
             )
         }
     }
-}
 
-@Composable
-fun NotificationCard(
-    task: DatabaseHelper.Task,
-    notification: String,
-    onMarkAsRead: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                notification.startsWith("Overdue") -> Color(0xFFFFCDD2) // Light red
-                notification.startsWith("Due Today") -> Color(0xFFFFF9C4) // Light yellow
-                else -> MaterialTheme.colorScheme.surface
-            }
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = notification,
-                style = MaterialTheme.typography.bodyLarge,
-                color = when {
-                    notification.startsWith("Overdue") -> Color(0xFFD32F2F) // Darker red
-                    notification.startsWith("Due Today") -> Color(0xFF455A64) // Dark gray-blue
-                    else -> MaterialTheme.colorScheme.onSurface
-                }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(
-                    onClick = onMarkAsRead,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF388E3C), // Green
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text("Mark as Read")
-                }
-                Button(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFD32F2F), // Red
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Delete")
-                }
-            }
+    // Helper function to parse date strings
+    fun parseDate(dateString: String): Date {
+        return try {
+            SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault()).parse(dateString) ?: Date(0)
+        } catch (e: Exception) {
+            Date(0) // Handle invalid dates as epoch time
         }
-        
     }
-}
-
-fun isSameDay(date1: Date, date2: Date): Boolean {
-    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    return sdf.format(date1) == sdf.format(date2)
 }
