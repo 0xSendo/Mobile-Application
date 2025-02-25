@@ -61,13 +61,14 @@ class TaskManagerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val username = intent.getStringExtra("USERNAME") ?: "" // Retrieve username from intent
         setContent {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF292929) // background: Dark Gray #292929
                 ) {
-                    TaskManagerScreen(taskViewModel)
+                    TaskManagerScreen(taskViewModel, username)
                 }
             }
         }
@@ -76,7 +77,7 @@ class TaskManagerActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskManagerScreen(taskViewModel: TaskViewModel) {
+fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String) {
     val taskList = taskViewModel.taskList
     val editingTaskId = taskViewModel.editingTaskId
 
@@ -319,19 +320,23 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel) {
             val navigationItems = listOf(
                 NavigationItem("Home", R.drawable.ic_home) {
                     val intent = Intent(context, HomeActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
                 NavigationItem("Tasks", R.drawable.ic_tasks) { /* Current screen, no action */ },
                 NavigationItem("Progress", R.drawable.ic_progress) {
                     val intent = Intent(context, ProgressTrackerActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
                 NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
                     val intent = Intent(context, PomodoroActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 },
                 NavigationItem("Expense", R.drawable.ic_calendar) {
                     val intent = Intent(context, ExpenseActivity::class.java)
+                    intent.putExtra("USERNAME", username) // Pass username
                     context.startActivity(intent)
                 }
             )
@@ -608,6 +613,6 @@ fun TaskManagerScreenPreview() {
             addTask(DatabaseHelper.Task(3, "History Essay", "HIST303", "2025-03-01 10:00 AM"))
             addTask(DatabaseHelper.Task(4, "English Paper", "ENG401", "2025-04-10 03:00 PM", isDone = true))
         }
-        TaskManagerScreen(previewViewModel)
+        TaskManagerScreen(previewViewModel, "previewUser")
     }
 }
