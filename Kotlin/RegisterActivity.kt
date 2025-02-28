@@ -3,26 +3,36 @@ package com.example.myacademate
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -33,11 +43,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.util.Calendar
 
 class RegisterActivity : ComponentActivity() {
@@ -49,16 +66,15 @@ class RegisterActivity : ComponentActivity() {
 
         setContent {
             val customColors = darkColorScheme(
-                primary = Color(0xFFFFA31A),  // Orange
-                secondary = Color(0xFF808080),  // Gray
-                background = Color(0xFF292929),  // Dark Gray
-                surface = Color(0xFF1B1B1B),  // Darker Gray
-                onPrimary = Color(0xFFFFFFFF),  // White
-                onSecondary = Color(0xFFFFFFFF),  // White
-                onBackground = Color(0xFFFFFFFF),  // White
-                onSurface = Color(0xFFFFFFFF),  // White
-                error = Color(0xFFCF6679),  // Red
-                onError = Color.Black
+                primary = Color(0xFFFFA31A),
+                secondary = Color(0xFF808080),
+                background = Color(0xFF121212),
+                surface = Color(0xFF1E1E1E),
+                onPrimary = Color.White,
+                onSecondary = Color.White,
+                onBackground = Color.White,
+                onSurface = Color.White,
+                error = Color(0xFFCF6679)
             )
 
             MaterialTheme(
@@ -69,19 +85,10 @@ class RegisterActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = customColors.background
                 ) {
-                    RegisterScreen(
-                        onRegisterSuccess = {
-                            Log.d("RegisterActivity", "Registration successful.")
-                            // Show success dialog
-                            var showSuccessDialog = true
-                        },
-                        dbHelper = dbHelper,
-                        onNavigateToLogin = {
-                            val intent = Intent(this, MainActivity::class.java)
-                            startActivity(intent)
-                            finish()
-                        }
-                    )
+                    RegisterScreen(dbHelper = dbHelper) {
+                        startActivity(Intent(this, MainActivity::class.java))
+                        finish()
+                    }
                 }
             }
         }
@@ -91,11 +98,11 @@ class RegisterActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,
     dbHelper: DatabaseHelper,
-    onNavigateToLogin: () -> Unit
+    onRegisterSuccess: () -> Unit
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -106,315 +113,285 @@ fun RegisterScreen(
     var birthdate by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var showSuccessDialog by remember { mutableStateOf(false) }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
-    LazyColumn(
+    val scrollState = rememberScrollState()
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp)
     ) {
-        item {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header
             Text(
-                text = "Register",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
-
-        item {
-            // First Name
-            OutlinedTextField(
-                value = firstName,
-                onValueChange = {
-                    firstName = it
-                    errorMessage = ""
-                },
-                label = { Text("First Name") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    cursorColor = MaterialTheme.colorScheme.onBackground,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
+                text = "Join Academate",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp
                 ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
 
-        item {
-            // Last Name
-            OutlinedTextField(
-                value = lastName,
-                onValueChange = {
-                    lastName = it
-                    errorMessage = ""
-                },
-                label = { Text("Last Name") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    cursorColor = MaterialTheme.colorScheme.onBackground,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        item {
-            // Username
-            OutlinedTextField(
-                value = username,
-                onValueChange = {
-                    username = it
-                    errorMessage = ""
-                },
-                label = { Text("Username") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    cursorColor = MaterialTheme.colorScheme.onBackground,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        item {
-            // Course
-            OutlinedTextField(
-                value = course,
-                onValueChange = {
-                    course = it
-                    errorMessage = ""
-                },
-                label = { Text("Course") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    cursorColor = MaterialTheme.colorScheme.onBackground,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        item {
-            // Year Level
-            OutlinedTextField(
-                value = yearLevel,
-                onValueChange = {
-                    yearLevel = it
-                    errorMessage = ""
-                },
-                label = { Text("Year Level") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    cursorColor = MaterialTheme.colorScheme.onBackground,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        item {
-            // Birthdate with Calendar (Read-only, clickable)
-            OutlinedTextField(
-                value = birthdate,
-                onValueChange = { /* Do nothing, read-only */ },
-                label = { Text("Birthdate (MM/DD/YYYY)") },
+            // Form Card
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = true) {
-                        if (birthdate.isEmpty()) { // Only show if birthdate is empty
-                            showDatePicker = true
-                        }
-                    },
-                enabled = false, // Prevent manual edits
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    disabledBorderColor = MaterialTheme.colorScheme.onBackground,
-                    disabledTextColor = MaterialTheme.colorScheme.onBackground,
-                    disabledLabelColor = MaterialTheme.colorScheme.onBackground
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
-            )
-            if (showDatePicker) {
-                val calendar = Calendar.getInstance()
-                DatePickerDialog(
-                    context,
-                    { _, year, month, day ->
-                        birthdate = "${month + 1}/$day/$year" // Format as MM/DD/YYYY
-                        showDatePicker = false
-                    },
-                    calendar.get(Calendar.YEAR),
-                    calendar.get(Calendar.MONTH),
-                    calendar.get(Calendar.DAY_OF_MONTH)
-                ).show()
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        item {
-            // Password (Obscured)
-            OutlinedTextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                    errorMessage = ""
-                },
-                label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(), // Obscure password
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    cursorColor = MaterialTheme.colorScheme.onBackground,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        item {
-            // Confirm Password (Obscured)
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = {
-                    confirmPassword = it
-                    errorMessage = ""
-                },
-                label = { Text("Confirm Password") },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(), // Obscure password
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    cursorColor = MaterialTheme.colorScheme.onBackground,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary,
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        item {
-            // Register Button
-            Button(
-                onClick = {
-                    val trimmedFirstName = firstName.trim()
-                    val trimmedLastName = lastName.trim()
-                    val trimmedUsername = username.trim()
-                    val trimmedCourse = course.trim()
-                    val trimmedYearLevel = yearLevel.trim()
-                    val trimmedBirthdate = birthdate.trim()
-                    val trimmedPassword = password.trim()
-                    val trimmedConfirmPassword = confirmPassword.trim()
-
-                    when {
-                        trimmedFirstName.isEmpty() || trimmedLastName.isEmpty() || trimmedUsername.isEmpty() ||
-                                trimmedCourse.isEmpty() || trimmedYearLevel.isEmpty() || trimmedPassword.isEmpty() ||
-                                trimmedConfirmPassword.isEmpty() || trimmedBirthdate.isEmpty() -> {
-                            errorMessage = "All fields must be filled."
-                        }
-                        trimmedPassword.length < 6 -> {
-                            errorMessage = "Password must be at least 6 characters."
-                        }
-                        trimmedPassword != trimmedConfirmPassword -> {
-                            errorMessage = "Passwords do not match."
-                        }
-                        else -> {
-                            Log.d("RegisterActivity", "Attempting to register: $trimmedUsername, $trimmedCourse, $trimmedYearLevel")
-                            val result = dbHelper.addUser(
-                                trimmedFirstName,
-                                trimmedLastName,
-                                trimmedCourse,
-                                trimmedYearLevel,
-                                trimmedUsername,
-                                trimmedPassword,
-                                trimmedBirthdate
-                            )
-                            if (result == -1L) {
-                                errorMessage = "Username already taken or registration failed."
-                                Log.e("RegisterActivity", "Registration failed for $trimmedUsername")
-                            } else {
-                                showSuccessDialog = true
-                                Log.d("RegisterActivity", "User registered: $trimmedUsername")
-                            }
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    .clip(RoundedCornerShape(16.dp)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Text(text = "Register", color = MaterialTheme.colorScheme.onPrimary)
-            }
-        }
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    InputField(
+                        value = firstName,
+                        onValueChange = { firstName = it; errorMessage = "" },
+                        label = "First Name",
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
 
-        item {
+                    InputField(
+                        value = lastName,
+                        onValueChange = { lastName = it; errorMessage = "" },
+                        label = "Last Name",
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+
+                    InputField(
+                        value = username,
+                        onValueChange = { username = it; errorMessage = "" },
+                        label = "Username",
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+
+                    InputField(
+                        value = course,
+                        onValueChange = { course = it; errorMessage = "" },
+                        label = "Course",
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+
+                    InputField(
+                        value = yearLevel,
+                        onValueChange = { yearLevel = it; errorMessage = "" },
+                        label = "Year Level",
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+
+                    DateField(
+                        value = birthdate,
+                        onDateSelected = { birthdate = it; errorMessage = "" },
+                        label = "Birthdate (MM/DD/YYYY)"
+                    )
+
+                    InputField(
+                        value = password,
+                        onValueChange = { password = it; errorMessage = "" },
+                        label = "Password",
+                        isPassword = true,
+                        imeAction = ImeAction.Next,
+                        onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+
+                    InputField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it; errorMessage = "" },
+                        label = "Confirm Password",
+                        isPassword = true,
+                        imeAction = ImeAction.Done,
+                        onImeAction = { focusManager.clearFocus() }
+                    )
+                }
+            }
+
             // Error Message
             if (errorMessage.isNotEmpty()) {
                 Text(
                     text = errorMessage,
                     color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Register Button
+            Button(
+                onClick = {
+                    isLoading = true
+                    val trimmedFields = listOf(
+                        firstName, lastName, username, course,
+                        yearLevel, birthdate, password, confirmPassword
+                    ).map { it.trim() }
+
+                    when {
+                        trimmedFields.any { it.isEmpty() } -> errorMessage = "All fields are required"
+                        password.length < 6 -> errorMessage = "Password must be at least 6 characters"
+                        password != confirmPassword -> errorMessage = "Passwords do not match"
+                        else -> {
+                            val result = dbHelper.addUser(
+                                trimmedFields[0], trimmedFields[1], trimmedFields[3],
+                                trimmedFields[4], trimmedFields[2], trimmedFields[6],
+                                trimmedFields[5]
+                            )
+                            if (result == -1L) {
+                                errorMessage = "Username taken or registration failed"
+                            } else {
+                                showSuccessDialog = true
+                            }
+                        }
+                    }
+                    isLoading = false
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !isLoading && listOf(
+                    firstName, lastName, username, course,
+                    yearLevel, birthdate, password, confirmPassword
+                ).all { it.isNotEmpty() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                )
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(
+                        text = "Sign Up",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            TextButton(
+                onClick = onRegisterSuccess,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text(
+                    text = "Already have an account? Sign in",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 14.sp
                 )
             }
         }
 
-        item {
-            // Navigate to Login
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = { onNavigateToLogin() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-            ) {
-                Text(text = "Already have an account? Log in here", color = MaterialTheme.colorScheme.onSecondary)
-            }
+        // Success Dialog
+        if (showSuccessDialog) {
+            AlertDialog(
+                onDismissRequest = { showSuccessDialog = false },
+                title = { Text("Welcome Aboard!") },
+                text = { Text("Your account has been created successfully.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showSuccessDialog = false
+                            onRegisterSuccess()
+                        }
+                    ) {
+                        Text("Sign In", color = MaterialTheme.colorScheme.primary)
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(16.dp)
+            )
         }
     }
+}
 
-    // Success Dialog
-    if (showSuccessDialog) {
-        AlertDialog(
-            onDismissRequest = { showSuccessDialog = false },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showSuccessDialog = false
-                        onNavigateToLogin()
-                    }
-                ) {
-                    Text("OK")
-                }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun InputField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    isPassword: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction,
+    onImeAction: () -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType,
+            imeAction = imeAction
+        ),
+        keyboardActions = KeyboardActions(onAny = { onImeAction() }),
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.secondary,
+            cursorColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.secondary
+        ),
+        textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateField(
+    value: String,
+    onDateSelected: (String) -> Unit,
+    label: String
+) {
+    val context = LocalContext.current
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        label = { Text(label) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showDatePicker = true },
+        enabled = false,
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            disabledBorderColor = MaterialTheme.colorScheme.secondary,
+            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+            disabledLabelColor = MaterialTheme.colorScheme.secondary
+        ),
+        textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface)
+    )
+
+    if (showDatePicker) {
+        val calendar = Calendar.getInstance()
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                onDateSelected("${month + 1}/$day/$year")
+                showDatePicker = false
             },
-            title = { Text("Registration Successful") },
-            text = { Text("You have been successfully registered.") }
-        )
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
     }
 }
