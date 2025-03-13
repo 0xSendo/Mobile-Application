@@ -2,6 +2,7 @@ package com.example.myacademate
 
 import android.Manifest
 import android.app.DatePickerDialog
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,30 +14,48 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -62,14 +82,13 @@ class ProfileActivity : ComponentActivity() {
         val dbHelper = DatabaseHelper(applicationContext)
         val username = intent.getStringExtra("USERNAME") ?: ""
 
-        // Load initial profile image URI
         profileViewModel.loadProfileImageUri(this, username)
 
         setContent {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF292929) // background: Dark Gray #292929
+                    color = Color(0xFF292929)
                 ) {
                     ProfileScreen(username, dbHelper, profileViewModel)
                 }
@@ -96,7 +115,6 @@ fun ProfileScreen(
     var showPictureOptionsDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
-    // Image picker launcher
     val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             context.contentResolver.takePersistableUriPermission(
@@ -108,7 +126,6 @@ fun ProfileScreen(
         } ?: Log.e("ProfileActivity", "No URI returned")
     }
 
-    // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
             getContent.launch("image/*")
@@ -131,172 +148,156 @@ fun ProfileScreen(
         datePicker.show()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        // Profile Picture Section
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .padding(bottom = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (imageUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(
-                        model = imageUri,
-                        placeholder = painterResource(id = R.drawable.ic_profile),
-                        error = painterResource(id = R.drawable.ic_error),
-                        onSuccess = { Log.d("ProfileActivity", "Image loaded successfully") },
-                        onError = { Log.e("ProfileActivity", "Image load failed: ${it.result.throwable}") }
-                    ),
-                    contentDescription = "Profile Picture",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profile Picture",
-                    modifier = Modifier.size(120.dp),
-                    tint = Color(0xFFFFA31A) // primary: Orange #ffa31a
-                )
-            }
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(username, context)
         }
-
-        Button(
-            onClick = { showPictureOptionsDialog = true },
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
-            )
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp, vertical = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Change Profile Picture")
-        }
-
-        // Editable Fields
-        TextField(
-            value = firstName,
-            onValueChange = { if (isEditing) firstName = it },
-            label = { Text("First Name", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-            modifier = Modifier.fillMaxWidth(),
-            enabled = isEditing,
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
-            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFFFFFF)) // onSurface: White #ffffff
-        )
-
-        TextField(
-            value = course,
-            onValueChange = { if (isEditing) course = it },
-            label = { Text("Course", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            enabled = isEditing,
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
-            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFFFFFF)) // onSurface: White #ffffff
-        )
-
-        TextField(
-            value = birthdate,
-            onValueChange = { if (isEditing) birthdate = it },
-            label = { Text("Birthdate", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-                .clickable(enabled = isEditing) { showDatePicker = true },
-            enabled = isEditing,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            placeholder = { Text("DD/MM/YYYY", color = Color(0xFF808080)) }, // secondary: Gray #808080
-            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFFFFFF)) // onSurface: White #ffffff
-        )
-
-        // Buttons Section
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Button(
-                onClick = {
-                    if (isEditing) {
-                        // Save changes to database
-                        dbHelper.updateUser(
-                            user?.id ?: 0,
-                            firstName,
-                            user?.lastName ?: "",
-                            course,
-                            user?.yearLevel ?: "",
-                            birthdate
+            Card(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clickable { showPictureOptionsDialog = true },
+                shape = CircleShape,
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (imageUri != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                model = imageUri,
+                                placeholder = painterResource(id = R.drawable.ic_profile),
+                                error = painterResource(id = R.drawable.ic_error)
+                            ),
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier.size(120.dp),
+                            tint = Color(0xFFFFA31A)
                         )
                     }
-                    isEditing = !isEditing
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                    contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
-                )
-            ) {
-                Text(if (isEditing) "Save" else "Edit Profile")
+                    if (!isEditing) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                .padding(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
             }
 
-            Button(
-                onClick = { showLogoutDialog = true },
+            Text(
+                text = "Change Profile Picture",
+                color = Color(0xFFFFA31A),
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF808080), // secondary: Gray #808080 (replacing error)
-                    contentColor = Color(0xFFFFFFFF) // onSecondary: White #ffffff
-                )
+                    .padding(top = 8.dp)
+                    .clickable { showPictureOptionsDialog = true },
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Text("Log Out")
+                Column(modifier = Modifier.padding(16.dp)) {
+                    ProfileTextField(
+                        value = firstName,
+                        onValueChange = { if (isEditing) firstName = it },
+                        label = "First Name",
+                        isEditing = isEditing
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ProfileTextField(
+                        value = course,
+                        onValueChange = { if (isEditing) course = it },
+                        label = "Course",
+                        isEditing = isEditing
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ProfileTextField(
+                        value = birthdate,
+                        onValueChange = { if (isEditing) birthdate = it },
+                        label = "Birthdate",
+                        isEditing = isEditing,
+                        onClick = { showDatePicker = true },
+                        placeholder = "DD/MM/YYYY"
+                    )
+                }
             }
 
-            Button(
-                onClick = {
-                    val intent = Intent(context, SettingsActivity::class.java)
-                    context.startActivity(intent)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF808080), // secondary: Gray #808080
-                    contentColor = Color(0xFFFFFFFF) // onSecondary: White #ffffff
-                )
-            ) {
-                Text("Settings")
-            }
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = { showDeleteAccountDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a (replacing red)
-                    contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
-                )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text("Delete Account")
+                PrimaryButton(
+                    text = if (isEditing) "Save" else "Edit Profile",
+                    onClick = {
+                        if (isEditing) {
+                            dbHelper.updateUser(
+                                user?.id ?: 0,
+                                firstName,
+                                user?.lastName ?: "",
+                                course,
+                                user?.yearLevel ?: "",
+                                birthdate
+                            )
+                        }
+                        isEditing = !isEditing
+                    }
+                )
+                SecondaryButton(
+                    text = "Settings",
+                    onClick = {
+                        context.startActivity(Intent(context, SettingsActivity::class.java))
+                    }
+                )
+                SecondaryButton(
+                    text = "Log Out",
+                    onClick = { showLogoutDialog = true }
+                )
+                OutlinedButton(
+                    onClick = { showDeleteAccountDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFFFFA31A)
+                    ),
+                    border = BorderStroke(1.dp, Color(0xFFFFA31A))
+                ) {
+                    Text("Delete Account")
+                }
             }
         }
     }
 
-    // Picture Options Dialog
     if (showPictureOptionsDialog) {
         AlertDialog(
             onDismissRequest = { showPictureOptionsDialog = false },
-            title = { Text("Profile Picture Options", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+            title = { Text("Profile Picture Options", color = Color(0xFFFFFFFF)) },
             text = {
                 Column {
                     TextButton(
@@ -314,7 +315,7 @@ fun ProfileScreen(
                             showPictureOptionsDialog = false
                         }
                     ) {
-                        Text("Upload New Picture", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                        Text("Upload New Picture", color = Color(0xFFFFA31A))
                     }
                     TextButton(
                         onClick = {
@@ -323,21 +324,20 @@ fun ProfileScreen(
                             showPictureOptionsDialog = false
                         }
                     ) {
-                        Text("Remove Picture", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                        Text("Remove Picture", color = Color(0xFFFFA31A))
                     }
                 }
             },
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showPictureOptionsDialog = false }) {
-                    Text("Cancel", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                    Text("Cancel", color = Color(0xFFFFA31A))
                 }
             },
-            containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+            containerColor = Color(0xFF1B1B1B)
         )
     }
 
-    // Logout Dialog
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -350,8 +350,8 @@ fun ProfileScreen(
                         context.startActivity(intent)
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
+                        containerColor = Color(0xFFFFA31A),
+                        contentColor = Color(0xFFFFFFFF)
                     )
                 ) {
                     Text("Confirm")
@@ -361,25 +361,24 @@ fun ProfileScreen(
                 Button(
                     onClick = { showLogoutDialog = false },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF808080), // secondary: Gray #808080
-                        contentColor = Color(0xFFFFFFFF) // onSecondary: White #ffffff
+                        containerColor = Color(0xFF808080),
+                        contentColor = Color(0xFFFFFFFF)
                     )
                 ) {
                     Text("Cancel")
                 }
             },
-            title = { Text("Log Out", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-            text = { Text("Are you sure you want to log out?", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-            containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+            title = { Text("Log Out", color = Color(0xFFFFFFFF)) },
+            text = { Text("Are you sure you want to log out?", color = Color(0xFFFFFFFF)) },
+            containerColor = Color(0xFF1B1B1B)
         )
     }
 
-    // Delete Account Confirmation Dialog
     if (showDeleteAccountDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteAccountDialog = false },
-            title = { Text("Delete Account", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-            text = { Text("Are you sure you want to delete your account? This action cannot be undone.", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
+            title = { Text("Delete Account", color = Color(0xFFFFFFFF)) },
+            text = { Text("Are you sure you want to delete your account? This action cannot be undone.", color = Color(0xFFFFFFFF)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -397,57 +396,129 @@ fun ProfileScreen(
                         showDeleteAccountDialog = false
                     }
                 ) {
-                    Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                    Text("Yes", color = Color(0xFFFFA31A))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showDeleteAccountDialog = false }
                 ) {
-                    Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                    Text("No", color = Color(0xFFFFA31A))
                 }
             },
-            containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+            containerColor = Color(0xFF1B1B1B)
         )
     }
+}
 
-    // Bottom Navigation
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    isEditing: Boolean,
+    onClick: (() -> Unit)? = null,
+    placeholder: String? = null
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, color = Color(0xFFFFFFFF)) },
+        modifier = Modifier.fillMaxWidth(),
+        enabled = isEditing,
+        readOnly = onClick != null,
+        placeholder = placeholder?.let { { Text(it, color = Color(0xFF808080)) } },
+        textStyle = TextStyle(color = Color(0xFFFFFFFF)),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (label == "Birthdate") KeyboardType.Number else KeyboardType.Text
+        ),
+        singleLine = true,
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            focusedBorderColor = Color(0xFFFFA31A),
+            unfocusedBorderColor = Color(0xFF808080)
+        ),
+        interactionSource = remember { MutableInteractionSource() }
+            .also { interactionSource ->
+                LaunchedEffect(interactionSource) {
+                    interactionSource.interactions.collect { interaction ->
+                        if (interaction is PressInteraction.Release && isEditing && onClick != null) {
+                            onClick()
+                        }
+                    }
+                }
+            }
+    )
+}
+
+@Composable
+fun PrimaryButton(text: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFFFA31A),
+            contentColor = Color(0xFFFFFFFF)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+fun SecondaryButton(text: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF808080),
+            contentColor = Color(0xFFFFFFFF)
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+fun BottomNavigationBar(username: String, context: Context) {
+    Surface(
+        color = Color(0xFF1B1B1B),
+        shadowElevation = 8.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp)
-                .align(Alignment.BottomCenter), // Align Row at the bottom
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             val navigationItems = listOf(
                 NavigationItem("Home", R.drawable.ic_home) {
                     val intent = Intent(context, HomeActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 },
                 NavigationItem("Tasks", R.drawable.ic_tasks) {
                     val intent = Intent(context, TaskManagerActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 },
                 NavigationItem("Progress", R.drawable.ic_progress) {
                     val intent = Intent(context, ProgressTrackerActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 },
                 NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
                     val intent = Intent(context, PomodoroActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 },
                 NavigationItem("Expense", R.drawable.ic_calendar) {
                     val intent = Intent(context, ExpenseActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
+                    intent.putExtra("USERNAME", username)
                     context.startActivity(intent)
                 }
             )
