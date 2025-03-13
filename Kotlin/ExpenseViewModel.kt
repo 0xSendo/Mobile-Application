@@ -16,12 +16,16 @@ class ExpenseViewModel private constructor() : ViewModel() {
     private val _expenseList = MutableStateFlow(mutableStateListOf<Expense>())
     val expenseList: StateFlow<List<Expense>> = _expenseList
 
+    private val _paidExpenses = MutableStateFlow(mutableStateListOf<Expense>())
+    val paidExpenses: StateFlow<List<Expense>> = _paidExpenses
+
     fun addExpense(expense: Expense) {
         _expenseList.value.add(expense)
     }
 
     fun deleteExpense(expense: Expense) {
         _expenseList.value.remove(expense)
+        _paidExpenses.value.add(expense.copy(completionPercentage = 100)) // Mark as fully paid
     }
 
     fun updateExpenseCompletion(expense: Expense, newCompletionPercentage: Int) {
@@ -32,13 +36,17 @@ class ExpenseViewModel private constructor() : ViewModel() {
         }
     }
 
-    // New method to update an entire expense
     fun updateExpense(oldExpense: Expense, newName: String, newAmount: Double, newCompletionPercentage: Int) {
         val index = _expenseList.value.indexOfFirst { it.name == oldExpense.name && it.amount == oldExpense.amount }
         if (index != -1) {
             val updatedExpense = Expense(newName, newAmount, newCompletionPercentage)
             _expenseList.value[index] = updatedExpense
         }
+    }
+
+    fun retrieveExpense(expense: Expense) {
+        _paidExpenses.value.remove(expense)
+        _expenseList.value.add(expense.copy(completionPercentage = 0)) // Reset progress when retrieved
     }
 
     companion object {
@@ -61,6 +69,4 @@ class ExpenseViewModel private constructor() : ViewModel() {
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
-
 }
-
