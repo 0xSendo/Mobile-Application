@@ -9,10 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 data class Expense(
     val name: String,
     val amount: Double,
-    val completionPercentage: Int = 0 // New field for progress
+    val completionPercentage: Int = 0
 )
-
-
 
 class ExpenseViewModel private constructor() : ViewModel() {
     private val _expenseList = MutableStateFlow(mutableStateListOf<Expense>())
@@ -26,11 +24,19 @@ class ExpenseViewModel private constructor() : ViewModel() {
         _expenseList.value.remove(expense)
     }
 
-    // New method to update completion percentage
     fun updateExpenseCompletion(expense: Expense, newCompletionPercentage: Int) {
         val index = _expenseList.value.indexOfFirst { it.name == expense.name && it.amount == expense.amount }
         if (index != -1) {
             val updatedExpense = expense.copy(completionPercentage = newCompletionPercentage)
+            _expenseList.value[index] = updatedExpense
+        }
+    }
+
+    // New method to update an entire expense
+    fun updateExpense(oldExpense: Expense, newName: String, newAmount: Double, newCompletionPercentage: Int) {
+        val index = _expenseList.value.indexOfFirst { it.name == oldExpense.name && it.amount == oldExpense.amount }
+        if (index != -1) {
+            val updatedExpense = Expense(newName, newAmount, newCompletionPercentage)
             _expenseList.value[index] = updatedExpense
         }
     }
@@ -45,4 +51,16 @@ class ExpenseViewModel private constructor() : ViewModel() {
             }
         }
     }
+
+    class ExpenseViewModelFactory(private val application: Application) : androidx.lifecycle.ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(ExpenseViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return ExpenseViewModel.getInstance(application) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
+
 }
+
