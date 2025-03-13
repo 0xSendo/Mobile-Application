@@ -6,6 +6,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,11 +22,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -29,19 +40,28 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.myacademate.ui.theme.MyAcademateTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 class ExpenseActivity : ComponentActivity() {
     private val expenseViewModel: ExpenseViewModel by viewModels {
@@ -55,7 +75,7 @@ class ExpenseActivity : ComponentActivity() {
             MyAcademateTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF292929) // background: Dark Gray #292929
+                    color = Color(0xFF292929) // Dark Gray #292929
                 ) {
                     ExpenseTrackerScreen(expenseViewModel, username)
                 }
@@ -70,6 +90,7 @@ enum class ExpenseFilterOption {
     LOWEST_AMOUNT
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
     val expenseList by expenseViewModel.expenseList.collectAsState()
@@ -78,80 +99,127 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
     var filterOption by remember { mutableStateOf(ExpenseFilterOption.ALPHABETICAL) }
     var showFilterDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val totalExpenses = expenseList.sumOf { it.amount }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF2A2A2A), Color(0xFF1A1A1A))
+                )
+            )
     ) {
-        LazyColumn(modifier = Modifier.weight(1f)) {
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             item {
-                // Input Fields for Adding Expenses
-                OutlinedTextField(
-                    value = expenseName,
-                    onValueChange = { expenseName = it },
-                    label = { Text("Expense Name", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFFFFFF)) // onSurface: White #ffffff
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            item {
-                OutlinedTextField(
-                    value = expenseAmount,
-                    onValueChange = { expenseAmount = it },
-                    label = { Text("Amount", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFFFFFFFF)) // onSurface: White #ffffff
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            item {
-                // Add Expense Button
-                Button(
-                    onClick = {
-                        if (expenseName.isNotEmpty() && expenseAmount.isNotEmpty()) {
-                            val amount = expenseAmount.toDoubleOrNull() ?: 0.0
-                            expenseViewModel.addExpense(Expense(expenseName, amount))
-                            expenseName = ""
-                            expenseAmount = ""
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
+                Column {
+                    Text(
+                        text = "Expense Tracker",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFFFFA31A),
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                ) {
-                    Text("Add Expense")
+                    Text(
+                        text = "Total Spending: $${String.format("%.2f", totalExpenses)}",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF808080),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                 }
-                Spacer(modifier = Modifier.height(24.dp))
             }
 
             item {
-                // Filter Button
-                Button(
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B).copy(alpha = 0.95f)),
+                    elevation = CardDefaults.cardElevation(10.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = expenseName,
+                            onValueChange = { expenseName = it },
+                            label = { Text("Expense Name", color = Color(0xFF808080)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = Color(0xFFFFFFFF),
+                                fontSize = 18.sp
+                            ),
+                            singleLine = true,
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Color(0xFFFFA31A),
+                                unfocusedBorderColor = Color(0xFF808080),
+                                cursorColor = Color(0xFFFFA31A)
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = expenseAmount,
+                            onValueChange = { expenseAmount = it },
+                            label = { Text("Amount", color = Color(0xFF808080)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                color = Color(0xFFFFFFFF),
+                                fontSize = 18.sp
+                            ),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                focusedBorderColor = Color(0xFFFFA31A),
+                                unfocusedBorderColor = Color(0xFF808080),
+                                cursorColor = Color(0xFFFFA31A)
+                            )
+                        )
+
+                        AnimatedButton(
+                            text = "Add Expense",
+                            onClick = {
+                                if (expenseName.isNotEmpty() && expenseAmount.isNotEmpty()) {
+                                    val amount = expenseAmount.toDoubleOrNull() ?: 0.0
+                                    expenseViewModel.addExpense(Expense(expenseName, amount))
+                                    expenseName = ""
+                                    expenseAmount = ""
+                                }
+                            },
+                            enabled = expenseName.isNotEmpty() && expenseAmount.isNotEmpty(),
+                            containerColor = Color(0xFFFFA31A),
+                            contentColor = Color(0xFFFFFFFF),
+                            coroutineScope = coroutineScope
+                        )
+                    }
+                }
+            }
+
+            item {
+                AnimatedButton(
+                    text = "Sort By: ${filterOption.name.lowercase().replace("_", " ").capitalize()}",
                     onClick = { showFilterDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF808080), // secondary: Gray #808080
-                        contentColor = Color(0xFFFFFFFF) // onSecondary: White #ffffff
-                    )
-                ) {
-                    Text("Filter (Current: ${filterOption.name.replace("_", " ").lowercase().capitalize()})")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                    enabled = expenseList.isNotEmpty(),
+                    containerColor = Color(0xFF808080),
+                    contentColor = Color(0xFFFFFFFF),
+                    coroutineScope = coroutineScope,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             item {
-                // List of Expenses
                 Text(
-                    text = "Expenses",
-                    style = androidx.compose.material3.Typography().titleLarge,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                    color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                    text = "Your Expenses",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFFFFF),
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
 
@@ -163,110 +231,167 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
 
             if (filteredExpenses.isNotEmpty()) {
                 items(filteredExpenses) { expense ->
-                    ExpenseItem(expense, expenseViewModel)
+                    ExpenseItem(expense, expenseViewModel, coroutineScope)
                 }
             } else {
                 item {
                     Text(
                         text = "No expenses added yet",
-                        style = androidx.compose.material3.Typography().bodyMedium,
-                        color = Color(0xFFFFFFFF) // onBackground: White #ffffff
+                        fontSize = 18.sp,
+                        color = Color(0xFF808080),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
             }
         }
 
-        // Bottom Navigation
-        Row(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
+                .height(90.dp),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+            elevation = CardDefaults.cardElevation(14.dp)
         ) {
-            val navigationItems = listOf(
-                NavigationItem("Home", R.drawable.ic_home) {
-                    val intent = Intent(context, HomeActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    context.startActivity(intent)
-                },
-                NavigationItem("Tasks", R.drawable.ic_tasks) {
-                    val intent = Intent(context, TaskManagerActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
-                    context.startActivity(intent)
-                },
-                NavigationItem("Progress", R.drawable.ic_progress) {
-                    val intent = Intent(context, ProgressTrackerActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
-                    context.startActivity(intent)
-                },
-                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
-                    val intent = Intent(context, PomodoroActivity::class.java)
-                    intent.putExtra("USERNAME", username) // Pass username
-                    context.startActivity(intent)
-                },
-                NavigationItem("Expense", R.drawable.ic_calendar) { /* Current screen, no action */ }
-            )
-            navigationItems.forEach { item ->
-                IconButton(
-                    onClick = { item.action() },
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = item.icon),
-                        contentDescription = item.label,
-                        modifier = Modifier.size(32.dp),
-                        tint = Color(0xFFFFFFFF) // onBackground: White #ffffff
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val navigationItems = listOf(
+                    NavigationItem("Home", R.drawable.ic_home) {
+                        val intent = Intent(context, HomeActivity::class.java)
+                        intent.putExtra("USERNAME", username)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        context.startActivity(intent)
+                    },
+                    NavigationItem("Tasks", R.drawable.ic_tasks) {
+                        val intent = Intent(context, TaskManagerActivity::class.java)
+                        intent.putExtra("USERNAME", username)
+                        context.startActivity(intent)
+                    },
+                    NavigationItem("Progress", R.drawable.ic_progress) {
+                        val intent = Intent(context, ProgressTrackerActivity::class.java)
+                        intent.putExtra("USERNAME", username)
+                        context.startActivity(intent)
+                    },
+                    NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
+                        val intent = Intent(context, PomodoroActivity::class.java)
+                        intent.putExtra("USERNAME", username)
+                        context.startActivity(intent)
+                    },
+                    NavigationItem("Expense", R.drawable.ic_calendar) { /* Current screen */ }
+                )
+
+                navigationItems.forEach { item ->
+                    FilterChip(
+                        selected = item.label == "Expense",
+                        onClick = { item.action() },
+                        label = {
+                            Icon(
+                                painter = painterResource(id = item.icon),
+                                contentDescription = item.label,
+                                modifier = Modifier.size(34.dp),
+                                tint = if (item.label == "Expense") Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                            )
+                        },
+                        modifier = Modifier.size(60.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = Color(0xFF1B1B1B),
+                            selectedContainerColor = Color(0xFF1B1B1B).copy(alpha = 0.9f)
+                        ),
+                        shape = CircleShape,
+                        border = null
                     )
                 }
             }
         }
     }
 
-    // Filter Dialog
     if (showFilterDialog) {
         AlertDialog(
             onDismissRequest = { showFilterDialog = false },
-            title = { Text("Sort Expenses By", color = Color(0xFFFFFFFF)) }, // onBackground: White #ffffff
+            title = {
+                Text(
+                    "Sort Expenses",
+                    color = Color(0xFFFFFFFF),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
-                Column {
-                    TextButton(onClick = {
-                        filterOption = ExpenseFilterOption.ALPHABETICAL
-                        showFilterDialog = false
-                    }) { Text("Alphabetical (A-Z)", color = Color(0xFFFFFFFF)) } // onBackground: White #ffffff
-                    TextButton(onClick = {
-                        filterOption = ExpenseFilterOption.HIGHEST_AMOUNT
-                        showFilterDialog = false
-                    }) { Text("Highest Amount", color = Color(0xFFFFFFFF)) } // onBackground: White #ffffff
-                    TextButton(onClick = {
-                        filterOption = ExpenseFilterOption.LOWEST_AMOUNT
-                        showFilterDialog = false
-                    }) { Text("Lowest Amount", color = Color(0xFFFFFFFF)) } // onBackground: White #ffffff
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "${expenseList.size} expenses",
+                        color = Color(0xFF808080),
+                        fontSize = 16.sp
+                    )
+                    listOf(
+                        ExpenseFilterOption.ALPHABETICAL to "A-Z",
+                        ExpenseFilterOption.HIGHEST_AMOUNT to "High to Low",
+                        ExpenseFilterOption.LOWEST_AMOUNT to "Low to High"
+                    ).forEach { (option, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    filterOption = option
+                                    showFilterDialog = false
+                                }
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (filterOption == option) Color(0xFFFFA31A) else Color(0xFFFFFFFF),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = when (option) {
+                                    ExpenseFilterOption.ALPHABETICAL -> "Sort by name"
+                                    ExpenseFilterOption.HIGHEST_AMOUNT -> "Highest amounts first"
+                                    ExpenseFilterOption.LOWEST_AMOUNT -> "Lowest amounts first"
+                                },
+                                color = Color(0xFF808080),
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showFilterDialog = false }) {
-                    Text("Cancel", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
+                    Text("Close", color = Color(0xFFFFA31A), fontSize = 18.sp)
                 }
             },
-            containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+            containerColor = Color(0xFF1B1B1B),
+            shape = RoundedCornerShape(16.dp)
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
+fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel, coroutineScope: CoroutineScope) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showPaidDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editedName by remember { mutableStateOf(expense.name) }
+    var editedAmount by remember { mutableStateOf(expense.amount.toString()) }
+    var editedProgress by remember { mutableStateOf(expense.completionPercentage.toString()) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)) // surface: Darker Gray #1b1b1b
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B).copy(alpha = 0.95f)),
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -277,141 +402,325 @@ fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel) {
                 Column {
                     Text(
                         text = expense.name,
-                        style = androidx.compose.material3.Typography().bodyLarge,
-                        color = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFFFFFFF)
                     )
                     Text(
-                        text = "$${expense.amount}",
-                        style = androidx.compose.material3.Typography().bodyMedium,
-                        color = Color(0xFFFFFFFF) // onSurface: White #ffffff
+                        text = "$${String.format("%.2f", expense.amount)}",
+                        fontSize = 16.sp,
+                        color = Color(0xFF808080)
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    IconButton(onClick = { showEditDialog = true }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_edit), // Replace with your edit icon
+                            contentDescription = "Edit Expense",
+                            tint = Color(0xFFFFA31A),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                     IconButton(onClick = { showPaidDialog = true }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_markdone),
                             contentDescription = "Mark as Paid",
-                            tint = Color(0xFFFFA31A) // primary: Orange #ffa31a
+                            tint = Color(0xFFFFA31A),
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_delete),
                             contentDescription = "Delete Expense",
-                            tint = Color(0xFFFFA31A) // primary: Orange #ffa31a
+                            tint = Color(0xFFFFA31A),
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             LinearProgressIndicator(
                 progress = expense.completionPercentage / 100f,
-                modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                trackColor = Color(0xFF808080) // secondary: Gray #808080
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp),
+                color = Color(0xFFFFA31A),
+                trackColor = Color(0xFF404040)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Button(
-                    onClick = { expenseViewModel.updateExpenseCompletion(expense, 25) },
-                    enabled = expense.completionPercentage < 25,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
-                    )
-                ) {
-                    Text("25%")
-                }
-                Button(
-                    onClick = { expenseViewModel.updateExpenseCompletion(expense, 50) },
-                    enabled = expense.completionPercentage < 50,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
-                    )
-                ) {
-                    Text("50%")
-                }
-                Button(
-                    onClick = { expenseViewModel.updateExpenseCompletion(expense, 75) },
-                    enabled = expense.completionPercentage < 75,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
-                    )
-                ) {
-                    Text("75%")
-                }
-                Button(
-                    onClick = { expenseViewModel.updateExpenseCompletion(expense, 100) },
+                AnimatedButton(
+                    text = "Mark Progress",
+                    onClick = {
+                        val newPercentage = when {
+                            expense.completionPercentage < 25 -> 25
+                            expense.completionPercentage < 50 -> 50
+                            expense.completionPercentage < 75 -> 75
+                            expense.completionPercentage < 100 -> 100
+                            else -> 100
+                        }
+                        expenseViewModel.updateExpenseCompletion(expense, newPercentage)
+                    },
                     enabled = expense.completionPercentage < 100,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A), // primary: Orange #ffa31a
-                        contentColor = Color(0xFFFFFFFF) // onPrimary: White #ffffff
-                    )
-                ) {
-                    Text("100%")
-                }
-            }
-
-            if (showDeleteDialog) {
-                AlertDialog(
-                    onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("Delete Expense", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                    text = { Text("Delete this expense?", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                expenseViewModel.deleteExpense(expense)
-                                showDeleteDialog = false
-                            }
-                        ) {
-                            Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(
-                            onClick = { showDeleteDialog = false }
-                        ) {
-                            Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
-                        }
-                    },
-                    containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                    containerColor = if (expense.completionPercentage == 100) Color(0xFF808080) else Color(0xFFFFA31A),
+                    contentColor = Color(0xFFFFFFFF),
+                    coroutineScope = coroutineScope,
+                    modifier = Modifier.weight(1f)
                 )
-            }
-
-            if (showPaidDialog) {
-                AlertDialog(
-                    onDismissRequest = { showPaidDialog = false },
-                    title = { Text("Mark Expense as Paid", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                    text = { Text("Mark this expense as paid? This will delete it.", color = Color(0xFFFFFFFF)) }, // onSurface: White #ffffff
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                expenseViewModel.deleteExpense(expense)
-                                showPaidDialog = false
-                            }
-                        ) {
-                            Text("Yes", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(
-                            onClick = { showPaidDialog = false }
-                        ) {
-                            Text("No", color = Color(0xFFFFA31A)) // primary: Orange #ffa31a
-                        }
-                    },
-                    containerColor = Color(0xFF1B1B1B) // surface: Darker Gray #1b1b1b
+                Text(
+                    text = "${expense.completionPercentage}% Paid",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (expense.completionPercentage == 100) Color(0xFF4CAF50) else Color(0xFFFFFFFF),
+                    modifier = Modifier
+                        .weight(1f)
+                        .align(Alignment.CenterVertically)
                 )
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text(
+                    "Remove Expense",
+                    color = Color(0xFFFFFFFF),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Remove '${expense.name}' from your list?",
+                        color = Color(0xFFFFFFFF),
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Amount: $${String.format("%.2f", expense.amount)}",
+                        color = Color(0xFF808080),
+                        fontSize = 16.sp
+                    )
+                    if (expense.completionPercentage > 0) {
+                        Text(
+                            text = "Progress: ${expense.completionPercentage}% paid",
+                            color = Color(0xFF808080),
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    expenseViewModel.deleteExpense(expense)
+                    showDeleteDialog = false
+                }) {
+                    Text("Remove", color = Color(0xFFFFA31A), fontSize = 18.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Keep", color = Color(0xFFFFA31A), fontSize = 18.sp)
+                }
+            },
+            containerColor = Color(0xFF1B1B1B),
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showPaidDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaidDialog = false },
+            title = {
+                Text(
+                    "Mark as Paid",
+                    color = Color(0xFFFFFFFF),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Mark '${expense.name}' as fully paid?",
+                        color = Color(0xFFFFFFFF),
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Amount: $${String.format("%.2f", expense.amount)}",
+                        color = Color(0xFF808080),
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = "This will remove it from your list.",
+                        color = Color(0xFF808080),
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    expenseViewModel.deleteExpense(expense)
+                    showPaidDialog = false
+                }) {
+                    Text("Mark Paid", color = Color(0xFFFFA31A), fontSize = 18.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaidDialog = false }) {
+                    Text("Cancel", color = Color(0xFFFFA31A), fontSize = 18.sp)
+                }
+            },
+            containerColor = Color(0xFF1B1B1B),
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = {
+                Text(
+                    "Edit Expense",
+                    color = Color(0xFFFFFFFF),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = editedName,
+                        onValueChange = { editedName = it },
+                        label = { Text("Name", color = Color(0xFF808080)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = Color(0xFFFFFFFF),
+                            fontSize = 18.sp
+                        ),
+                        singleLine = true,
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = Color(0xFFFFA31A),
+                            unfocusedBorderColor = Color(0xFF808080),
+                            cursorColor = Color(0xFFFFA31A)
+                        )
+                    )
+                    OutlinedTextField(
+                        value = editedAmount,
+                        onValueChange = { editedAmount = it },
+                        label = { Text("Amount", color = Color(0xFF808080)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = Color(0xFFFFFFFF),
+                            fontSize = 18.sp
+                        ),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = Color(0xFFFFA31A),
+                            unfocusedBorderColor = Color(0xFF808080),
+                            cursorColor = Color(0xFFFFA31A)
+                        )
+                    )
+                    OutlinedTextField(
+                        value = editedProgress,
+                        onValueChange = { newValue ->
+                            val filtered = newValue.filter { it.isDigit() }.take(3)
+                            editedProgress = if (filtered.toIntOrNull() ?: 0 <= 100) filtered else "100"
+                        },
+                        label = { Text("Progress (%)", color = Color(0xFF808080)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            color = Color(0xFFFFFFFF),
+                            fontSize = 18.sp
+                        ),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = Color(0xFFFFA31A),
+                            unfocusedBorderColor = Color(0xFF808080),
+                            cursorColor = Color(0xFFFFA31A)
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val newAmount = editedAmount.toDoubleOrNull() ?: expense.amount
+                    val newProgress = editedProgress.toIntOrNull()?.coerceIn(0, 100) ?: expense.completionPercentage
+                    expenseViewModel.updateExpense(expense, editedName, newAmount, newProgress)
+                    showEditDialog = false
+                }) {
+                    Text("Save", color = Color(0xFFFFA31A), fontSize = 18.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("Cancel", color = Color(0xFFFFA31A), fontSize = 18.sp)
+                }
+            },
+            containerColor = Color(0xFF1B1B1B),
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+}
+
+@Composable
+fun AnimatedButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    containerColor: Color,
+    contentColor: Color,
+    coroutineScope: CoroutineScope,
+    modifier: Modifier = Modifier
+) {
+    val scale = remember { Animatable(1f) }
+    val interactionSource = remember { MutableInteractionSource() }
+
+    Button(
+        onClick = {
+            onClick()
+            coroutineScope.launch {
+                scale.animateTo(0.92f, animationSpec = tween(120))
+                scale.animateTo(1f, animationSpec = tween(120))
+            }
+        },
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+            disabledContainerColor = containerColor.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+        modifier = modifier
+            .scale(scale.value)
+            .height(48.dp)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { /* Custom click handling in onClick */ }
+            .padding(horizontal = 16.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
