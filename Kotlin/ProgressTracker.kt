@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,8 +27,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -397,6 +396,7 @@ fun ProgressCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationBar(username: String, currentScreen: String, onScreenChange: (String) -> Unit) {
     Card(
@@ -423,23 +423,26 @@ fun NavigationBar(username: String, currentScreen: String, onScreenChange: (Stri
             )
 
             navigationItems.forEach { item ->
-                val isSelected = currentScreen == item.label
-                IconButton(
+                FilterChip(
+                    selected = false, // Always false to prevent persistent highlighting
                     onClick = { item.action() },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            if (isSelected) Color(0xFFFFA31A).copy(alpha = 0.3f) else Color.Transparent,
-                            shape = CircleShape
+                    label = {
+                        Icon(
+                            painter = painterResource(id = item.icon),
+                            contentDescription = item.label,
+                            modifier = Modifier.size(32.dp),
+                            tint = Color(0xFFFFFFFF) // Always white, no highlight
                         )
-                ) {
-                    Icon(
-                        painter = painterResource(id = item.icon),
-                        contentDescription = item.label,
-                        modifier = Modifier.size(32.dp),
-                        tint = if (isSelected) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
-                    )
-                }
+                    },
+                    modifier = Modifier
+                        .size(56.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = Color(0xFF1B1B1B),
+                        selectedContainerColor = Color(0xFF1B1B1B) // Same color, no change
+                    ),
+                    shape = CircleShape,
+                    border = null // No border to avoid any highlight effect
+                )
             }
         }
     }
