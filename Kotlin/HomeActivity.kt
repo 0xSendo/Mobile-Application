@@ -29,11 +29,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -60,6 +63,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import coil.compose.rememberAsyncImagePainter
 import com.example.myacademate.ui.theme.MyAcademateTheme
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class HomeActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels()
@@ -103,6 +109,26 @@ class ExpenseViewModelFactory(private val application: Application) : ViewModelP
     }
 }
 
+@Composable
+fun QuickActionButton(text: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .height(48.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFFFA31A),
+            contentColor = Color(0xFFFFFFFF)
+        )
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -125,7 +151,6 @@ fun HomeScreen(
     val lastName = user?.lastName ?: "User"
     val course = user?.course ?: "N/A"
     val yearLevel = user?.yearLevel ?: "N/A"
-
     val profileImageUri by profileViewModel::profileImageUri
 
     var showTaskCompleteDialog by remember { mutableStateOf(false) }
@@ -165,24 +190,16 @@ fun HomeScreen(
                     val navigationItems = listOf(
                         NavigationItem("Home", R.drawable.ic_home) { /* Already on Home screen */ },
                         NavigationItem("Tasks", R.drawable.ic_tasks) {
-                            val intent = Intent(context, TaskManagerActivity::class.java)
-                            intent.putExtra("USERNAME", username)
-                            context.startActivity(intent)
+                            context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
                         },
                         NavigationItem("Progress", R.drawable.ic_progress) {
-                            val intent = Intent(context, ProgressTrackerActivity::class.java)
-                            intent.putExtra("USERNAME", username)
-                            context.startActivity(intent)
+                            context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
                         },
                         NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
-                            val intent = Intent(context, PomodoroActivity::class.java)
-                            intent.putExtra("USERNAME", username)
-                            context.startActivity(intent)
+                            context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
                         },
                         NavigationItem("Expense", R.drawable.ic_calendar) {
-                            val intent = Intent(context, ExpenseActivity::class.java)
-                            intent.putExtra("USERNAME", username)
-                            context.startActivity(intent)
+                            context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
                         }
                     )
 
@@ -217,6 +234,7 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Profile Section
             item {
                 Card(
                     modifier = Modifier
@@ -267,21 +285,19 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "$firstName $lastName",
-                                style = androidx.compose.material3.Typography().titleLarge.copy(fontWeight = FontWeight.Bold),
+                                text = "Welcome, $firstName $lastName!",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 color = Color(0xFFFFFFFF)
                             )
                             Text(
                                 text = "$course - Year $yearLevel",
-                                style = androidx.compose.material3.Typography().titleMedium,
+                                style = MaterialTheme.typography.titleMedium,
                                 color = Color(0xFFFFA31A)
                             )
                         }
                         Spacer(modifier = Modifier.weight(1f))
                         IconButton(onClick = {
-                            val intent = Intent(context, NotificationsActivity::class.java)
-                            intent.putExtra("USERNAME", username)
-                            context.startActivity(intent)
+                            context.startActivity(Intent(context, NotificationsActivity::class.java).putExtra("USERNAME", username))
                         }) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_notifications),
@@ -294,6 +310,7 @@ fun HomeScreen(
                 }
             }
 
+            // Search Bar
             item {
                 OutlinedTextField(
                     value = searchQuery,
@@ -315,11 +332,38 @@ fun HomeScreen(
                         focusedLabelColor = Color(0xFFFFA31A),
                         unfocusedLabelColor = Color(0xFF808080)
                     ),
-                    textStyle = androidx.compose.material3.Typography().bodyLarge.copy(color = Color(0xFFFFFFFF)),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color(0xFFFFFFFF)),
                     singleLine = true
                 )
             }
 
+            // Today's Date
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Today's Date",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFFFFFFF)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).format(
+                                Date()
+                            ),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFFFFA31A)
+                        )
+                    }
+                }
+            }
+
+            // Task Manager
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -330,7 +374,7 @@ fun HomeScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Task Manager",
-                            style = androidx.compose.material3.Typography().headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = Color(0xFFFFFFFF)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -339,19 +383,17 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        val intent = Intent(context, TaskManagerActivity::class.java)
-                                        intent.putExtra("USERNAME", username)
-                                        context.startActivity(intent)
+                                        context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
                                     }
                             ) {
                                 Text(
                                     text = latestTask.subjectName,
-                                    style = androidx.compose.material3.Typography().bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                     color = Color(0xFFFFFFFF)
                                 )
                                 Text(
                                     text = "Due ${formatDueDate(latestTask.dueTime)}",
-                                    style = androidx.compose.material3.Typography().bodyMedium,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = Color(0xFF808080)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -368,9 +410,7 @@ fun HomeScreen(
                                         )
                                     }
                                     IconButton(onClick = {
-                                        val intent = Intent(context, TaskManagerActivity::class.java)
-                                        intent.putExtra("USERNAME", username)
-                                        context.startActivity(intent)
+                                        context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
                                     }) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_edit),
@@ -393,26 +433,16 @@ fun HomeScreen(
                             if (showTaskCompleteDialog) {
                                 AlertDialog(
                                     onDismissRequest = { showTaskCompleteDialog = false },
-                                    title = {
-                                        Text(
-                                            "Mark Task as Complete",
-                                            color = Color(0xFFFFFFFF),
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
+                                    title = { Text("Mark Task as Complete", color = Color(0xFFFFFFFF), fontWeight = FontWeight.Bold) },
                                     text = { Text("Mark this task as complete?", color = Color(0xFFFFFFFF)) },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             taskViewModel.toggleTaskStatus(latestTask.id)
                                             showTaskCompleteDialog = false
-                                        }) {
-                                            Text("Yes", color = Color(0xFFFFA31A))
-                                        }
+                                        }) { Text("Yes", color = Color(0xFFFFA31A)) }
                                     },
                                     dismissButton = {
-                                        TextButton(onClick = { showTaskCompleteDialog = false }) {
-                                            Text("No", color = Color(0xFFFFA31A))
-                                        }
+                                        TextButton(onClick = { showTaskCompleteDialog = false }) { Text("No", color = Color(0xFFFFA31A)) }
                                     },
                                     containerColor = Color(0xFF1B1B1B),
                                     shape = RoundedCornerShape(12.dp)
@@ -422,26 +452,16 @@ fun HomeScreen(
                             if (showTaskDeleteDialog) {
                                 AlertDialog(
                                     onDismissRequest = { showTaskDeleteDialog = false },
-                                    title = {
-                                        Text(
-                                            "Delete Task",
-                                            color = Color(0xFFFFFFFF),
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
+                                    title = { Text("Delete Task", color = Color(0xFFFFFFFF), fontWeight = FontWeight.Bold) },
                                     text = { Text("Delete this task?", color = Color(0xFFFFFFFF)) },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             taskViewModel.deleteTask(latestTask.id)
                                             showTaskDeleteDialog = false
-                                        }) {
-                                            Text("Yes", color = Color(0xFFFFA31A))
-                                        }
+                                        }) { Text("Yes", color = Color(0xFFFFA31A)) }
                                     },
                                     dismissButton = {
-                                        TextButton(onClick = { showTaskDeleteDialog = false }) {
-                                            Text("No", color = Color(0xFFFFA31A))
-                                        }
+                                        TextButton(onClick = { showTaskDeleteDialog = false }) { Text("No", color = Color(0xFFFFA31A)) }
                                     },
                                     containerColor = Color(0xFF1B1B1B),
                                     shape = RoundedCornerShape(12.dp)
@@ -450,7 +470,7 @@ fun HomeScreen(
                         } else {
                             Text(
                                 text = "No tasks available",
-                                style = androidx.compose.material3.Typography().bodyMedium,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = Color(0xFF808080)
                             )
                         }
@@ -458,6 +478,7 @@ fun HomeScreen(
                 }
             }
 
+            // Expense Tracker
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -468,7 +489,7 @@ fun HomeScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Expense Tracker",
-                            style = androidx.compose.material3.Typography().headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = Color(0xFFFFFFFF)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -477,24 +498,22 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        val intent = Intent(context, ExpenseActivity::class.java)
-                                        intent.putExtra("USERNAME", username)
-                                        context.startActivity(intent)
+                                        context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
                                     }
                             ) {
                                 Text(
                                     text = latestExpense.name,
-                                    style = androidx.compose.material3.Typography().bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                                     color = Color(0xFFFFFFFF)
                                 )
                                 Text(
-                                    text = "Amount: $${latestExpense.amount}",
-                                    style = androidx.compose.material3.Typography().bodyMedium,
+                                    text = "Amount: $${String.format("%.2f", latestExpense.amount)}",
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = Color(0xFF808080)
                                 )
                                 Text(
                                     text = "Status: ${if (latestExpense.completionPercentage > 0) "Partially Paid (${latestExpense.completionPercentage}%)" else "To Be Paid"}",
-                                    style = androidx.compose.material3.Typography().bodyMedium,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = Color(0xFF808080)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -511,9 +530,7 @@ fun HomeScreen(
                                         )
                                     }
                                     IconButton(onClick = {
-                                        val intent = Intent(context, ExpenseActivity::class.java)
-                                        intent.putExtra("USERNAME", username)
-                                        context.startActivity(intent)
+                                        context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
                                     }) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_edit),
@@ -536,31 +553,16 @@ fun HomeScreen(
                             if (showExpensePaidDialog) {
                                 AlertDialog(
                                     onDismissRequest = { showExpensePaidDialog = false },
-                                    title = {
-                                        Text(
-                                            "Mark Expense as Paid",
-                                            color = Color(0xFFFFFFFF),
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
-                                    text = {
-                                        Text(
-                                            "Mark this expense as paid? This will delete it.",
-                                            color = Color(0xFFFFFFFF)
-                                        )
-                                    },
+                                    title = { Text("Mark Expense as Paid", color = Color(0xFFFFFFFF), fontWeight = FontWeight.Bold) },
+                                    text = { Text("Mark this expense as paid? This will delete it.", color = Color(0xFFFFFFFF)) },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             expenseViewModel.deleteExpense(latestExpense)
                                             showExpensePaidDialog = false
-                                        }) {
-                                            Text("Yes", color = Color(0xFFFFA31A))
-                                        }
+                                        }) { Text("Yes", color = Color(0xFFFFA31A)) }
                                     },
                                     dismissButton = {
-                                        TextButton(onClick = { showExpensePaidDialog = false }) {
-                                            Text("No", color = Color(0xFFFFA31A))
-                                        }
+                                        TextButton(onClick = { showExpensePaidDialog = false }) { Text("No", color = Color(0xFFFFA31A)) }
                                     },
                                     containerColor = Color(0xFF1B1B1B),
                                     shape = RoundedCornerShape(12.dp)
@@ -570,26 +572,16 @@ fun HomeScreen(
                             if (showExpenseDeleteDialog) {
                                 AlertDialog(
                                     onDismissRequest = { showExpenseDeleteDialog = false },
-                                    title = {
-                                        Text(
-                                            "Delete Expense",
-                                            color = Color(0xFFFFFFFF),
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
+                                    title = { Text("Delete Expense", color = Color(0xFFFFFFFF), fontWeight = FontWeight.Bold) },
                                     text = { Text("Delete this expense?", color = Color(0xFFFFFFFF)) },
                                     confirmButton = {
                                         TextButton(onClick = {
                                             expenseViewModel.deleteExpense(latestExpense)
                                             showExpenseDeleteDialog = false
-                                        }) {
-                                            Text("Yes", color = Color(0xFFFFA31A))
-                                        }
+                                        }) { Text("Yes", color = Color(0xFFFFA31A)) }
                                     },
                                     dismissButton = {
-                                        TextButton(onClick = { showExpenseDeleteDialog = false }) {
-                                            Text("No", color = Color(0xFFFFA31A))
-                                        }
+                                        TextButton(onClick = { showExpenseDeleteDialog = false }) { Text("No", color = Color(0xFFFFA31A)) }
                                     },
                                     containerColor = Color(0xFF1B1B1B),
                                     shape = RoundedCornerShape(12.dp)
@@ -598,7 +590,7 @@ fun HomeScreen(
                         } else {
                             Text(
                                 text = "No expenses added yet",
-                                style = androidx.compose.material3.Typography().bodyMedium,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = Color(0xFF808080)
                             )
                         }
@@ -606,6 +598,7 @@ fun HomeScreen(
                 }
             }
 
+            // Games Section
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -616,7 +609,7 @@ fun HomeScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Games",
-                            style = androidx.compose.material3.Typography().headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = Color(0xFFFFFFFF)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -624,65 +617,105 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Card(
-                                modifier = Modifier
-                                    .size(150.dp)
-                                    .clickable {
-                                        val intent = Intent(context, MathChallengeActivity::class.java)
-                                        intent.putExtra("USERNAME", username)
-                                        context.startActivity(intent)
-                                    },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
-                                elevation = CardDefaults.cardElevation(2.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .padding(16.dp)
-                                        .fillMaxSize(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = "Math Challenge",
-                                        style = androidx.compose.material3.Typography().bodyLarge.copy(fontWeight = FontWeight.Medium),
-                                        color = Color(0xFFFFFFFF),
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                    )
-                                }
+                            GameCard("Math Challenge") {
+                                context.startActivity(Intent(context, MathChallengeActivity::class.java).putExtra("USERNAME", username))
                             }
-
-                            Card(
-                                modifier = Modifier
-                                    .size(150.dp)
-                                    .clickable {
-                                        val intent = Intent(context, GuessNumberActivity::class.java)
-                                        intent.putExtra("USERNAME", username)
-                                        context.startActivity(intent)
-                                    },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
-                                elevation = CardDefaults.cardElevation(2.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .padding(16.dp)
-                                        .fillMaxSize(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Text(
-                                        text = "Guess the Number",
-                                        style = androidx.compose.material3.Typography().bodyLarge.copy(fontWeight = FontWeight.Medium),
-                                        color = Color(0xFFFFFFFF),
-                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                    )
-                                }
+                            GameCard("Guess the Number") {
+                                context.startActivity(Intent(context, GuessNumberActivity::class.java).putExtra("USERNAME", username))
                             }
                         }
                     }
                 }
             }
+
+            // Quick Actions - Apply weight here
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Quick Actions",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFFFFFFF)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            QuickActionButton("Add Task") {
+                                context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                            }.run { Modifier.weight(1f) }
+                            QuickActionButton("Add Expense") {
+                                context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                            }.run { Modifier.weight(1f) }
+                        }
+                    }
+                }
+            }
+
+            // Motivational Quote
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Daily Motivation",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFFFFFFF)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "\"The only way to do great work is to love what you do.\" - Steve Jobs",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFFFFA31A),
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        )
+                    }
+                }
+            }
+
+            // Spacer at the bottom
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+}
+
+// ... (rest of your helper composables and classes remain unchanged)
+
+@Composable
+fun GameCard(title: String, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .size(150.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF292929)),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = Color(0xFFFFFFFF),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }
@@ -694,5 +727,5 @@ data class NavigationItem(
 )
 
 fun formatDueDate(dueTime: String): String {
-    return dueTime
+    return dueTime // Add proper date formatting if needed
 }
