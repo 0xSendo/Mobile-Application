@@ -1,6 +1,5 @@
 package com.example.myacademate
 
-// Added imports for UI enhancements
 import android.app.Application
 import android.content.Intent
 import android.os.Bundle
@@ -113,8 +112,7 @@ class ExpenseViewModelFactory(private val application: Application) : ViewModelP
 fun QuickActionButton(text: String, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .height(48.dp),
+        modifier = Modifier.height(48.dp),
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFFFFA31A),
@@ -337,7 +335,7 @@ fun HomeScreen(
                 )
             }
 
-            // Today's Date
+            // Today Section (Merged Weather and Date)
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -345,19 +343,31 @@ fun HomeScreen(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
                     elevation = CardDefaults.cardElevation(4.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_weather), // Add your weather icon
+                                contentDescription = "Weather",
+                                modifier = Modifier.size(32.dp),
+                                tint = Color(0xFFFFA31A)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Sunny, 25°C", // Placeholder, integrate with weather API
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color(0xFFFFA31A)
+                            )
+                        }
                         Text(
-                            text = "Today's Date",
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color(0xFFFFFFFF)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault()).format(
-                                Date()
-                            ),
+                            text = SimpleDateFormat("EEE, MMM dd", Locale.getDefault()).format(Date()), // Shortened format
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color(0xFFFFA31A)
+                            color = Color(0xFFFFFFFF)
                         )
                     }
                 }
@@ -598,6 +608,54 @@ fun HomeScreen(
                 }
             }
 
+            // Progress Snapshot
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Progress Snapshot",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFFFFFFF)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Tasks Completed",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color(0xFFFFFFFF)
+                                )
+                                Text(
+                                    text = "${taskList.count { it.isDone }} / ${taskList.size}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFFFFA31A)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Expenses Paid",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color(0xFFFFFFFF)
+                                )
+                                Text(
+                                    text = "${expenseList.count { it.completionPercentage == 100 }} / ${expenseList.size}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFFFFA31A)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // Games Section
             item {
                 Card(
@@ -628,7 +686,7 @@ fun HomeScreen(
                 }
             }
 
-            // Quick Actions - Apply weight here
+            // Quick Actions
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -654,6 +712,70 @@ fun HomeScreen(
                                 context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
                             }.run { Modifier.weight(1f) }
                         }
+                    }
+                }
+            }
+
+            // Recent Activity
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Recent Activity",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFFFFFFF)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (latestTask != null) {
+                            Text(
+                                text = "Added Task: ${latestTask.subjectName}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF808080)
+                            )
+                        }
+                        if (latestExpense != null) {
+                            Text(
+                                text = "Added Expense: ${latestExpense.name} ($${String.format("%.2f", latestExpense.amount)})",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF808080)
+                            )
+                        }
+                        if (latestTask == null && latestExpense == null) {
+                            Text(
+                                text = "No recent activity",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF808080)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Study Tips
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Study Tip of the Day",
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFFFFFFF)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Break your study sessions into 25-minute chunks with 5-minute breaks (Pomodoro Technique).",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color(0xFFFFA31A)
+                        )
                     }
                 }
             }
@@ -690,8 +812,6 @@ fun HomeScreen(
         }
     }
 }
-
-// ... (rest of your helper composables and classes remain unchanged)
 
 @Composable
 fun GameCard(title: String, onClick: () -> Unit) {
