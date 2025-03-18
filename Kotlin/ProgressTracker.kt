@@ -1,8 +1,8 @@
 package com.example.myacademate
 
-// Added imports for UI enhancements and fragment-like navigation
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -51,6 +51,8 @@ import com.example.myacademate.ui.theme.MyAcademateTheme
 
 class ProgressTrackerActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels()
+    private var backPressedTime: Long = 0
+    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds interval
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,13 +68,22 @@ class ProgressTrackerActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onBackPressed() {
+        if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
+            finishAffinity() // Close all activities and exit app
+        } else {
+            Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
+        }
+        backPressedTime = System.currentTimeMillis()
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String) {
     val context = LocalContext.current
-    var currentScreen by remember { mutableStateOf("Progress") } // State to track current screen
+    var currentScreen by remember { mutableStateOf("Progress") }
 
     Scaffold(
         bottomBar = {
@@ -87,6 +98,7 @@ fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String) {
                             else -> null
                         }
                         intent?.putExtra("USERNAME", username)
+                        intent?.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         intent?.let { context.startActivity(it) }
                     }
                     "Progress" -> currentScreen = "Progress" // Stay on current screen
@@ -105,7 +117,6 @@ fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String) {
 fun ProgressTrackerContent(taskViewModel: TaskViewModel, username: String, paddingValues: PaddingValues) {
     val taskList: List<DatabaseHelper.Task> = taskViewModel.taskList
     var filterOption by remember { mutableStateOf(FilterOption.ALPHABETICAL) }
-    val context = LocalContext.current
 
     LazyColumn(
         modifier = Modifier
@@ -424,24 +435,24 @@ fun NavigationBar(username: String, currentScreen: String, onScreenChange: (Stri
 
             navigationItems.forEach { item ->
                 FilterChip(
-                    selected = false, // Always false to prevent persistent highlighting
+                    selected = false,
                     onClick = { item.action() },
                     label = {
                         Icon(
                             painter = painterResource(id = item.icon),
                             contentDescription = item.label,
                             modifier = Modifier.size(32.dp),
-                            tint = Color(0xFFFFFFFF) // Always white, no highlight
+                            tint = Color(0xFFFFFFFF)
                         )
                     },
                     modifier = Modifier
                         .size(56.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = Color(0xFF1B1B1B),
-                        selectedContainerColor = Color(0xFF1B1B1B) // Same color, no change
+                        selectedContainerColor = Color(0xFF1B1B1B)
                     ),
                     shape = CircleShape,
-                    border = null // No border to avoid any highlight effect
+                    border = null
                 )
             }
         }
