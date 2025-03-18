@@ -1,10 +1,10 @@
 package com.example.myacademate
 
-// Added imports for UI enhancements and fragment-like navigation
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -67,6 +67,8 @@ enum class Sorting {
 
 class TaskManagerActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels()
+    private var backPressedTime: Long = 0
+    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds interval
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +83,15 @@ class TaskManagerActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onBackPressed() {
+        if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
+            finishAffinity() // This will close all activities and exit the app
+        } else {
+            Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
+        }
+        backPressedTime = System.currentTimeMillis()
     }
 }
 
@@ -430,6 +441,7 @@ fun TaskManagerContent(taskViewModel: TaskViewModel, username: String, paddingVa
 
 @Composable
 fun NavigationBar(username: String, highlightedNavItem: String?) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -445,27 +457,30 @@ fun NavigationBar(username: String, highlightedNavItem: String?) {
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val context = LocalContext.current
             val navigationItems = listOf(
                 NavigationItem("Home", R.drawable.ic_home) {
                     val intent = Intent(context, HomeActivity::class.java)
                     intent.putExtra("USERNAME", username)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     context.startActivity(intent)
                 },
                 NavigationItem("Tasks", R.drawable.ic_tasks) { /* Current screen, no action */ },
                 NavigationItem("Progress", R.drawable.ic_progress) {
                     val intent = Intent(context, ProgressTrackerActivity::class.java)
                     intent.putExtra("USERNAME", username)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     context.startActivity(intent)
                 },
                 NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
                     val intent = Intent(context, PomodoroActivity::class.java)
                     intent.putExtra("USERNAME", username)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     context.startActivity(intent)
                 },
                 NavigationItem("Expense", R.drawable.ic_calendar) {
                     val intent = Intent(context, ExpenseActivity::class.java)
                     intent.putExtra("USERNAME", username)
+                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     context.startActivity(intent)
                 }
             )
