@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -73,6 +74,10 @@ class HomeActivity : ComponentActivity() {
     }
     private val profileViewModel: ProfileViewModel by viewModels()
 
+    // Variables for back press handling
+    private var backPressedTime: Long = 0
+    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds interval
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -95,6 +100,16 @@ class HomeActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    // Override onBackPressed to implement double press to exit
+    override fun onBackPressed() {
+        if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
+            finishAffinity() // Close all activities and exit app
+        } else {
+            Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
+        }
+        backPressedTime = System.currentTimeMillis()
     }
 }
 
