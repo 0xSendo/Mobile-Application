@@ -3,6 +3,7 @@ package com.example.myacademate
 import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.Animatable
@@ -66,12 +67,24 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class PomodoroActivity : ComponentActivity() {
+    private var backPressedTime: Long = 0
+    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds interval
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val username = intent.getStringExtra("USERNAME") ?: ""
         setContent {
             PomodoroScreen(username)
         }
+    }
+
+    override fun onBackPressed() {
+        if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
+            finishAffinity() // Close all activities and exit app
+        } else {
+            Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
+        }
+        backPressedTime = System.currentTimeMillis()
     }
 }
 
@@ -224,7 +237,6 @@ fun PomodoroScreen(username: String) {
                                 isBreakRunning || showBreakCompleteMessage -> Color(0xFF4CAF50)
                                 else -> Color(0xFFFFA31A)
                             },
-                            modifier = Modifier.padding(bottom = 10.dp)
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -523,22 +535,26 @@ fun PomodoroScreen(username: String) {
                     NavigationItem("Home", R.drawable.ic_home) {
                         val intent = Intent(context, HomeActivity::class.java)
                         intent.putExtra("USERNAME", username)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         context.startActivity(intent)
                     },
                     NavigationItem("Tasks", R.drawable.ic_tasks) {
                         val intent = Intent(context, TaskManagerActivity::class.java)
                         intent.putExtra("USERNAME", username)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         context.startActivity(intent)
                     },
                     NavigationItem("Progress", R.drawable.ic_progress) {
                         val intent = Intent(context, ProgressTrackerActivity::class.java)
                         intent.putExtra("USERNAME", username)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         context.startActivity(intent)
                     },
                     NavigationItem("Pomodoro", R.drawable.ic_pomodoro) { /* Current screen */ },
                     NavigationItem("Expense", R.drawable.ic_calendar) {
                         val intent = Intent(context, ExpenseActivity::class.java)
                         intent.putExtra("USERNAME", username)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                         context.startActivity(intent)
                     }
                 )
