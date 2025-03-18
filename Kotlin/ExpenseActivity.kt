@@ -3,6 +3,7 @@ package com.example.myacademate
 import android.app.Application
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -72,6 +73,8 @@ class ExpenseActivity : ComponentActivity() {
     private val expenseViewModel: ExpenseViewModel by viewModels {
         ExpenseViewModelFactory(applicationContext as Application)
     }
+    private var backPressedTime: Long = 0
+    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds interval
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +89,15 @@ class ExpenseActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onBackPressed() {
+        if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
+            finishAffinity() // Close all activities and exit app
+        } else {
+            Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
+        }
+        backPressedTime = System.currentTimeMillis()
     }
 }
 
@@ -136,7 +148,7 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
                         )
                         IconButton(onClick = { showPaidExpensesDialog = true }) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_history), // Replace with your history icon
+                                painter = painterResource(id = R.drawable.ic_history),
                                 contentDescription = "View Paid Expenses",
                                 tint = Color(0xFFFFA31A),
                                 modifier = Modifier.size(28.dp)
@@ -227,7 +239,7 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFFFFFF),
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
 
@@ -519,16 +531,19 @@ fun BottomNavigationBar(username: String) {
                 NavigationItem("Tasks", R.drawable.ic_tasks) {
                     context.startActivity(Intent(context, TaskManagerActivity::class.java).apply {
                         putExtra("USERNAME", username)
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     })
                 },
                 NavigationItem("Progress", R.drawable.ic_progress) {
                     context.startActivity(Intent(context, ProgressTrackerActivity::class.java).apply {
                         putExtra("USERNAME", username)
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     })
                 },
                 NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
                     context.startActivity(Intent(context, PomodoroActivity::class.java).apply {
                         putExtra("USERNAME", username)
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     })
                 },
                 NavigationItem("Expense", R.drawable.ic_calendar) { /* Current screen */ }
