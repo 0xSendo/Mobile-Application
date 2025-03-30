@@ -1,6 +1,7 @@
 package com.example.myacademate
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -16,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,27 +26,37 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,7 +70,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -74,28 +85,24 @@ class ExpenseActivity : ComponentActivity() {
         ExpenseViewModelFactory(applicationContext as Application)
     }
     private var backPressedTime: Long = 0
-    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds interval
+    private val BACK_PRESS_INTERVAL = 2000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val username = intent.getStringExtra("USERNAME") ?: ""
         setContent {
             MyAcademateTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF292929)
-                ) {
-                    ExpenseTrackerScreen(expenseViewModel, username)
-                }
+                ExpenseTrackerScreen(expenseViewModel, username, this)
             }
         }
     }
 
     override fun onBackPressed() {
+        super.onBackPressed()
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
-            finishAffinity() // Close all activities and exit app
+            finishAffinity()
         } else {
-            Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show()
         }
         backPressedTime = System.currentTimeMillis()
     }
@@ -109,7 +116,114 @@ enum class ExpenseFilterOption {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
+fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String, context: Context) {
+    var highlightedNavItem by remember { mutableStateOf<String?>(null) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(250.dp),
+                drawerContainerColor = Color(0xFF1B1B1B)
+            ) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "MyAcademate",
+                    color = Color(0xFFFFA31A),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+                Spacer(Modifier.height(16.dp))
+
+                val navItems = listOf(
+                    Pair("Home", R.drawable.ic_home) to {
+                        context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
+                    },
+                    Pair("Tasks", R.drawable.ic_tasks) to {
+                        context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                    },
+                    Pair("Progress", R.drawable.ic_progress) to {
+                        context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
+                    },
+                    Pair("Pomodoro", R.drawable.ic_pomodoro) to {
+                        context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                    },
+                    Pair("Expense", R.drawable.ic_calendar) to { /* Current screen */ }
+                )
+
+                navItems.forEach { (pair, action) ->
+                    val (label, icon) = pair
+                    val isHighlighted = highlightedNavItem == label || label == "Expense"
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = label,
+                                color = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                            )
+                        },
+                        selected = isHighlighted,
+                        onClick = {
+                            action()
+                            scope.launch { drawerState.close() }
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = icon),
+                                contentDescription = label,
+                                tint = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                            )
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                }
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Expense Tracker",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFFFFA31A)
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { /* Add info dialog */ }) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Info",
+                                tint = Color(0xFFFFA31A)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1B1B1B))
+                )
+            },
+            containerColor = Color(0xFF292929)
+        ) { paddingValues ->
+            ExpenseContent(expenseViewModel, username, paddingValues)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ExpenseContent(expenseViewModel: ExpenseViewModel, username: String, paddingValues: PaddingValues) {
     val expenseList by expenseViewModel.expenseList.collectAsState()
     val paidExpenses by expenseViewModel.paidExpenses.collectAsState()
     var expenseName by remember { mutableStateOf("") }
@@ -117,13 +231,13 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
     var filterOption by remember { mutableStateOf(ExpenseFilterOption.ALPHABETICAL) }
     var showFilterDialog by remember { mutableStateOf(false) }
     var showPaidExpensesDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val totalExpenses = expenseList.sumOf { it.amount }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .background(Brush.verticalGradient(colors = listOf(Color(0xFF2A2A2A), Color(0xFF1A1A1A))))
     ) {
         LazyColumn(
@@ -265,27 +379,24 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String) {
             }
         }
 
-        BottomNavigationBar(username)
-    }
+        if (showFilterDialog) {
+            FilterDialog(
+                expenseListSize = expenseList.size,
+                currentFilter = filterOption,
+                onFilterSelected = { filterOption = it; showFilterDialog = false },
+                onDismiss = { showFilterDialog = false }
+            )
+        }
 
-    if (showFilterDialog) {
-        FilterDialog(
-            expenseListSize = expenseList.size,
-            currentFilter = filterOption,
-            onFilterSelected = { filterOption = it; showFilterDialog = false },
-            onDismiss = { showFilterDialog = false }
-        )
-    }
-
-    if (showPaidExpensesDialog) {
-        PaidExpensesDialog(
-            paidExpenses = paidExpenses,
-            expenseViewModel = expenseViewModel,
-            onDismiss = { showPaidExpensesDialog = false }
-        )
+        if (showPaidExpensesDialog) {
+            PaidExpensesDialog(
+                paidExpenses = paidExpenses,
+                expenseViewModel = expenseViewModel,
+                onDismiss = { showPaidExpensesDialog = false }
+            )
+        }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel, coroutineScope: CoroutineScope) {
@@ -499,78 +610,6 @@ fun AnimatedButton(
             fontWeight = FontWeight.Medium,
             maxLines = 1
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BottomNavigationBar(username: String) {
-    val context = LocalContext.current
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
-        elevation = CardDefaults.cardElevation(10.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val navigationItems = listOf(
-                NavigationItem("Home", R.drawable.ic_home) {
-                    context.startActivity(Intent(context, HomeActivity::class.java).apply {
-                        putExtra("USERNAME", username)
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    })
-                },
-                NavigationItem("Tasks", R.drawable.ic_tasks) {
-                    context.startActivity(Intent(context, TaskManagerActivity::class.java).apply {
-                        putExtra("USERNAME", username)
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    })
-                },
-                NavigationItem("Progress", R.drawable.ic_progress) {
-                    context.startActivity(Intent(context, ProgressTrackerActivity::class.java).apply {
-                        putExtra("USERNAME", username)
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    })
-                },
-                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
-                    context.startActivity(Intent(context, PomodoroActivity::class.java).apply {
-                        putExtra("USERNAME", username)
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    })
-                },
-                NavigationItem("Expense", R.drawable.ic_calendar) { /* Current screen */ }
-            )
-
-            navigationItems.forEach { item ->
-                FilterChip(
-                    selected = item.label == "Expense",
-                    onClick = { item.action() },
-                    label = {
-                        Icon(
-                            painter = painterResource(id = item.icon),
-                            contentDescription = item.label,
-                            modifier = Modifier.size(30.dp),
-                            tint = if (item.label == "Expense") Color(0xFFFFA31A) else Color(0xFFFFFFFF)
-                        )
-                    },
-                    modifier = Modifier.size(50.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = Color(0xFF1B1B1B),
-                        selectedContainerColor = Color(0xFF1B1B1B).copy(alpha = 0.8f)
-                    ),
-                    shape = CircleShape,
-                    border = null
-                )
-            }
-        }
     }
 }
 
