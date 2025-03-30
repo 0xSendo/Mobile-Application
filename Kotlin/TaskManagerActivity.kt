@@ -17,9 +17,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -54,8 +56,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -77,6 +77,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
@@ -141,59 +142,109 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: C
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(250.dp),
-                drawerContainerColor = Color(0xFF1B1B1B)
+                modifier = Modifier.width(280.dp), // Slightly wider for better spacing
+                drawerContainerColor = Color(0xFF1B1B1B),
+                drawerContentColor = Color.Transparent
             ) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = "MyAcademate",
-                    color = Color(0xFFFFA31A),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 16.dp)
-                )
-                Spacer(Modifier.height(16.dp))
-
-                val navItems = listOf(
-                    Pair("Home", R.drawable.ic_home) to {
-                        context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
-                    },
-                    Pair("Tasks", R.drawable.ic_tasks) to { /* Current screen */ },
-                    Pair("Progress", R.drawable.ic_progress) to {
-                        context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
-                    },
-                    Pair("Pomodoro", R.drawable.ic_pomodoro) to {
-                        context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
-                    },
-                    Pair("Expense", R.drawable.ic_calendar) to {
-                        context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
-                    }
-                )
-
-                navItems.forEach { (pair, action) ->
-                    val (label, icon) = pair
-                    val isHighlighted = highlightedNavItem == label || label == "Tasks"
-                    NavigationDrawerItem(
-                        label = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0xFF1B1B1B), Color(0xFF2A2A2A))
+                            )
+                        )
+                        .padding(16.dp)
+                ) {
+                    // Header with gradient background
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.Transparent
+                        ),
+                        elevation = CardDefaults.cardElevation(0.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(Color(0xFFFFA31A), Color(0xFFFFC107))
+                                    )
+                                )
+                                .padding(16.dp)
+                        ) {
                             Text(
-                                text = label,
-                                color = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                                text = "MyAcademate",
+                                color = Color.White,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.ExtraBold
                             )
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    val navItems = listOf(
+                        Pair("Home", R.drawable.ic_home) to {
+                            context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
                         },
-                        selected = isHighlighted,
-                        onClick = {
-                            action()
-                            scope.launch { drawerState.close() }
+                        Pair("Tasks", R.drawable.ic_tasks) to {
+
                         },
-                        icon = {
-                            Icon(
-                                painter = painterResource(id = icon),
-                                contentDescription = label,
-                                tint = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
-                            )
+                        Pair("Progress", R.drawable.ic_progress) to {
+                            context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        Pair("Pomodoro", R.drawable.ic_pomodoro) to {
+                            context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                        },
+
+                        Pair("Expense", R.drawable.ic_calendar) to {
+                            context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                        }
                     )
+
+                    navItems.forEach { (pair, action) ->
+                        val (label, icon) = pair
+                        val isHighlighted = highlightedNavItem == label || label == "Tasks"
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    action()
+                                    scope.launch { drawerState.close() }
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isHighlighted) Color(0xFFFFA31A).copy(alpha = 0.1f) else Color.Transparent
+                            ),
+                            elevation = CardDefaults.cardElevation(0.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = icon),
+                                    contentDescription = label,
+                                    tint = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Text(
+                                    text = label,
+                                    color = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
