@@ -17,7 +17,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -36,11 +35,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,10 +47,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -63,10 +67,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,6 +86,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myacademate.ui.theme.MyAcademateTheme
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -113,6 +120,7 @@ class TaskManagerActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
+        super.onBackPressed()
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
             finishAffinity()
         } else {
@@ -126,34 +134,106 @@ class TaskManagerActivity : ComponentActivity() {
 @Composable
 fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: Context) {
     var highlightedNavItem by remember { mutableStateOf<String?>(null) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    Scaffold(
-        bottomBar = { NavigationBar(username, highlightedNavItem, context) },
-        containerColor = Color(0xFF292929),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Task Manager",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1B1B1B)),
-                actions = {
-                    IconButton(onClick = { /* Add info dialog */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "Info",
-                            tint = Color(0xFFFFA31A)
-                        )
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(250.dp),
+                drawerContainerColor = Color(0xFF1B1B1B)
+            ) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "MyAcademate",
+                    color = Color(0xFFFFA31A),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+                Spacer(Modifier.height(16.dp))
+
+                val navItems = listOf(
+                    Pair("Home", R.drawable.ic_home) to {
+                        context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
+                    },
+                    Pair("Tasks", R.drawable.ic_tasks) to { /* Current screen */ },
+                    Pair("Progress", R.drawable.ic_progress) to {
+                        context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
+                    },
+                    Pair("Pomodoro", R.drawable.ic_pomodoro) to {
+                        context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                    },
+                    Pair("Expense", R.drawable.ic_calendar) to {
+                        context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
                     }
+                )
+
+                navItems.forEach { (pair, action) ->
+                    val (label, icon) = pair
+                    val isHighlighted = highlightedNavItem == label || label == "Tasks"
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = label,
+                                color = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                            )
+                        },
+                        selected = isHighlighted,
+                        onClick = {
+                            action()
+                            scope.launch { drawerState.close() }
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(id = icon),
+                                contentDescription = label,
+                                tint = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                            )
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
                 }
-            )
+            }
         }
-    ) { paddingValues ->
-        TaskManagerContent(taskViewModel, username, paddingValues, context)
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Task Manager",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = Color(0xFFFFA31A)
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { /* Add info dialog */ }) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Info",
+                                tint = Color(0xFFFFA31A)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF1B1B1B))
+                )
+            },
+            containerColor = Color(0xFF292929)
+        ) { paddingValues ->
+            TaskManagerContent(taskViewModel, username, paddingValues, context)
+        }
     }
 }
 
@@ -948,71 +1028,6 @@ fun CompletedTasksDialog(
     )
 }
 
-@Composable
-fun NavigationBar(username: String, highlightedNavItem: String?, context: Context) {
-    Surface(
-        color = Color(0xFF1B1B1B),
-        shadowElevation = 8.dp,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .height(80.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val navigationItems = listOf(
-                NavigationItem("Home", R.drawable.ic_home) {
-                    val intent = Intent(context, HomeActivity::class.java)
-                    intent.putExtra("USERNAME", username)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    context.startActivity(intent)
-                },
-                NavigationItem("Tasks", R.drawable.ic_tasks) { /* Current screen */ },
-                NavigationItem("Progress", R.drawable.ic_progress) {
-                    val intent = Intent(context, ProgressTrackerActivity::class.java)
-                    intent.putExtra("USERNAME", username)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    context.startActivity(intent)
-                },
-                NavigationItem("Pomodoro", R.drawable.ic_pomodoro) {
-                    val intent = Intent(context, PomodoroActivity::class.java)
-                    intent.putExtra("USERNAME", username)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    context.startActivity(intent)
-                },
-                NavigationItem("Expense", R.drawable.ic_calendar) {
-                    val intent = Intent(context, ExpenseActivity::class.java)
-                    intent.putExtra("USERNAME", username)
-                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    context.startActivity(intent)
-                }
-            )
-
-            navigationItems.forEach { item ->
-                val isHighlighted = highlightedNavItem == item.label && item.label != "Tasks"
-                IconButton(
-                    onClick = { item.action() },
-                    modifier = Modifier
-                        .size(60.dp)
-                        .background(
-                            if (isHighlighted) Color(0xFFFFA31A).copy(alpha = 0.2f) else Color.Transparent,
-                            shape = CircleShape
-                        )
-                ) {
-                    Icon(
-                        painter = painterResource(id = item.icon),
-                        contentDescription = item.label,
-                        modifier = Modifier.size(28.dp),
-                        tint = if (isHighlighted) Color(0xFFFFA31A) else Color.White
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun CompletedTaskItem(
