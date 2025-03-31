@@ -85,7 +85,6 @@ class ProgressTrackerActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
             finishAffinity() // Close all activities and exit app
         } else {
@@ -124,7 +123,7 @@ fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String, contex
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color.Transparent
@@ -154,18 +153,26 @@ fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String, contex
                     val navItems = listOf(
                         Pair("Home", R.drawable.ic_home) to {
                             context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Tasks", R.drawable.ic_tasks) to {
                             context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Progress", R.drawable.ic_progress) to {
+                            scope.launch { drawerState.close() }
                         },
                         Pair("Pomodoro", R.drawable.ic_pomodoro) to {
                             context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
-
                         Pair("Expense", R.drawable.ic_calendar) to {
                             context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         }
                     )
 
@@ -544,7 +551,6 @@ fun ProgressCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel) {
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
