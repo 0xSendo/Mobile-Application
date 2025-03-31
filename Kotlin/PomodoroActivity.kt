@@ -90,9 +90,8 @@ class PomodoroActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
-            finishAffinity()
+            finishAffinity() // Exit the app
         } else {
             Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show()
         }
@@ -111,7 +110,7 @@ fun PomodoroScreen(username: String, context: Context) {
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(280.dp), // Slightly wider for better spacing
+                modifier = Modifier.width(280.dp),
                 drawerContainerColor = Color(0xFF1B1B1B),
                 drawerContentColor = Color.Transparent
             ) {
@@ -125,11 +124,10 @@ fun PomodoroScreen(username: String, context: Context) {
                         )
                         .padding(16.dp)
                 ) {
-                    // Header with gradient background
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color.Transparent
@@ -159,16 +157,25 @@ fun PomodoroScreen(username: String, context: Context) {
                     val navItems = listOf(
                         Pair("Home", R.drawable.ic_home) to {
                             context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
                         Pair("Tasks", R.drawable.ic_tasks) to {
                             context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Progress", R.drawable.ic_progress) to {
                             context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
-                        Pair("Pomodoro", R.drawable.ic_pomodoro) to { /* Current screen */ },
+                        Pair("Pomodoro", R.drawable.ic_pomodoro) to {
+                        },
                         Pair("Expense", R.drawable.ic_calendar) to {
                             context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         }
                     )
 
@@ -273,7 +280,6 @@ fun PomodoroContent(username: String, context: Context, paddingValues: PaddingVa
     var totalBreakDuration by remember { mutableLongStateOf(5 * 60 * 1000L) }
     val progress = remember { Animatable(1f) }
 
-    // Animations
     val pulseScale by rememberInfiniteTransition().animateFloat(
         initialValue = 1f,
         targetValue = 1.1f,
@@ -292,7 +298,6 @@ fun PomodoroContent(username: String, context: Context, paddingValues: PaddingVa
         )
     )
 
-    // Completion animations
     val completionScale = remember { Animatable(0f) }
     LaunchedEffect(showPomodoroCompleteMessage, showBreakCompleteMessage, isBreakRunning) {
         if (showPomodoroCompleteMessage) {
@@ -356,7 +361,6 @@ fun PomodoroContent(username: String, context: Context, paddingValues: PaddingVa
                 .weight(1f)
                 .fillMaxSize()
         ) {
-            // Wave background
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val waveAmplitude = 20.dp.toPx()
                 val waveFrequency = 0.02f
