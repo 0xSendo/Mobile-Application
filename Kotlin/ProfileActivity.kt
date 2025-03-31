@@ -95,6 +95,8 @@ import java.util.Calendar
 
 class ProfileActivity : ComponentActivity() {
     private val profileViewModel: ProfileViewModel by viewModels()
+    private var backPressedTime: Long = 0
+    private val BACK_PRESS_INTERVAL = 2000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,6 +110,15 @@ class ProfileActivity : ComponentActivity() {
                 ProfileScreen(username, dbHelper, profileViewModel, this)
             }
         }
+    }
+
+    override fun onBackPressed() {
+        if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
+            finishAffinity() // Close all activities and exit app
+        } else {
+            android.widget.Toast.makeText(this, "Press back again to exit the app", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        backPressedTime = System.currentTimeMillis()
     }
 }
 
@@ -179,11 +190,9 @@ fun ProfileScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Transparent
-                        ),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                         elevation = CardDefaults.cardElevation(0.dp)
                     ) {
                         Box(
@@ -209,20 +218,30 @@ fun ProfileScreen(
                     val navItems = listOf(
                         Pair("Home", R.drawable.ic_home) to {
                             context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Tasks", R.drawable.ic_tasks) to {
                             context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Progress", R.drawable.ic_progress) to {
                             context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Pomodoro", R.drawable.ic_pomodoro) to {
                             context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Expense", R.drawable.ic_calendar) to {
                             context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
-                        Pair("Profile", R.drawable.ic_profile) to { /* Current screen */ }
+                        Pair("Profile", R.drawable.ic_profile) to { scope.launch { drawerState.close() } }
                     )
 
                     navItems.forEach { (pair, action) ->
@@ -535,7 +554,11 @@ fun ProfileContent(
                     )
                     SecondaryButton(
                         text = "Settings",
-                        onClick = { context.startActivity(Intent(context, SettingsActivity::class.java)) }
+                        onClick = {
+                            context.startActivity(Intent(context, SettingsActivity::class.java))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
+                        }
                     )
                     SecondaryButton(
                         text = "Log Out",
@@ -601,6 +624,8 @@ fun ProfileContent(
                         val intent = Intent(context, MainActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         context.startActivity(intent)
+                        (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                        (context as? ComponentActivity)?.finish()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFA31A)),
                     shape = RoundedCornerShape(8.dp)
@@ -629,7 +654,8 @@ fun ProfileContent(
                             val intent = Intent(context, MainActivity::class.java)
                             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                             context.startActivity(intent)
-                            (context as ComponentActivity).finish()
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         }
                         setShowDeleteAccountDialog(false)
                     },
