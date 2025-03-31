@@ -96,13 +96,17 @@ class ExpenseActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
-            finishAffinity()
+            finishAffinity() // Exit the app
         } else {
             Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show()
         }
         backPressedTime = System.currentTimeMillis()
+    }
+
+    private fun startActivityWithAnimation(intent: Intent) {
+        startActivity(intent)
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
     }
 }
 
@@ -123,7 +127,7 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String, c
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(280.dp), // Slightly wider for better spacing
+                modifier = Modifier.width(280.dp),
                 drawerContainerColor = Color(0xFF1B1B1B),
                 drawerContentColor = Color.Transparent
             ) {
@@ -137,15 +141,12 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String, c
                         )
                         .padding(16.dp)
                 ) {
-                    // Header with gradient background
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Transparent
-                        ),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                         elevation = CardDefaults.cardElevation(0.dp)
                     ) {
                         Box(
@@ -171,18 +172,27 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String, c
                     val navItems = listOf(
                         Pair("Home", R.drawable.ic_home) to {
                             context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
                         Pair("Tasks", R.drawable.ic_tasks) to {
                             context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            (context as? ComponentActivity)?.finish()
                         },
                         Pair("Progress", R.drawable.ic_progress) to {
                             context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
                         Pair("Pomodoro", R.drawable.ic_pomodoro) to {
                             context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
+                        Pair("Expense", R.drawable.ic_calendar) to {
 
-                        Pair("Expense", R.drawable.ic_calendar) to { /* Current screen */}
+                        }
                     )
 
                     navItems.forEach { (pair, action) ->
@@ -209,12 +219,6 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String, c
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(id = icon),
-                                    contentDescription = label,
-                                    tint = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF),
-                                    modifier = Modifier.size(28.dp)
-                                )
                                 Text(
                                     text = label,
                                     color = if (isHighlighted) Color(0xFFFFA31A) else Color(0xFFFFFFFF),
@@ -304,7 +308,7 @@ fun ExpenseContent(expenseViewModel: ExpenseViewModel, username: String, padding
                             fontSize = 30.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFFFFA31A),
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
                         IconButton(onClick = { showPaidExpensesDialog = true }) {
                             Icon(
@@ -320,7 +324,7 @@ fun ExpenseContent(expenseViewModel: ExpenseViewModel, username: String, padding
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF808080),
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
             }
@@ -443,6 +447,7 @@ fun ExpenseContent(expenseViewModel: ExpenseViewModel, username: String, padding
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseItem(expense: Expense, expenseViewModel: ExpenseViewModel, coroutineScope: CoroutineScope) {
@@ -769,7 +774,7 @@ fun PaidDialog(expense: Expense, expenseViewModel: ExpenseViewModel, onDismiss: 
         },
         confirmButton = {
             TextButton(onClick = {
-                expenseViewModel.deleteExpense(expense) // Moves to paidExpenses in ViewModel
+                expenseViewModel.deleteExpense(expense)
                 onDismiss()
             }) {
                 Text("Mark Paid", color = Color(0xFFFFA31A), fontSize = 16.sp)
