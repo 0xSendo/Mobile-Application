@@ -121,8 +121,8 @@ class TaskManagerActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
+            super.onBackPressed()
             finishAffinity()
         } else {
             Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show()
@@ -142,7 +142,7 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: C
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(280.dp), // Slightly wider for better spacing
+                modifier = Modifier.width(280.dp),
                 drawerContainerColor = Color(0xFF1B1B1B),
                 drawerContentColor = Color.Transparent
             ) {
@@ -156,7 +156,6 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: C
                         )
                         .padding(16.dp)
                 ) {
-                    // Header with gradient background
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -190,19 +189,24 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: C
                     val navItems = listOf(
                         Pair("Home", R.drawable.ic_home) to {
                             context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
-                        Pair("Tasks", R.drawable.ic_tasks) to {
-
-                        },
+                        Pair("Tasks", R.drawable.ic_tasks) to { },
                         Pair("Progress", R.drawable.ic_progress) to {
                             context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
                         Pair("Pomodoro", R.drawable.ic_pomodoro) to {
                             context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         },
-
                         Pair("Expense", R.drawable.ic_calendar) to {
                             context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                            scope.launch { drawerState.close() }
                         }
                     )
 
@@ -215,7 +219,6 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: C
                                 .padding(vertical = 4.dp)
                                 .clickable {
                                     action()
-                                    scope.launch { drawerState.close() }
                                 },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
@@ -303,13 +306,12 @@ fun TaskManagerContent(
     var showCompletedTasksDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var page by remember { mutableStateOf(1) }
-    val pageSize = 20 // Number of tasks per page
+    val pageSize = 20
 
     val taskList = taskViewModel.taskList
     val upcomingTasks = taskList.filter { !it.isDone }
     val completedTasks = taskList.filter { it.isDone }
 
-    // Filter and sort tasks
     val filteredTasks = upcomingTasks.filter {
         it.subjectName.contains(searchQuery, ignoreCase = true) ||
                 it.courseCode.contains(searchQuery, ignoreCase = true)
@@ -320,17 +322,14 @@ fun TaskManagerContent(
         Sorting.AZ -> filteredTasks.sortedBy { it.subjectName }
     }
 
-    // Paginate tasks
     val paginatedTasks = sortedUpcomingTasks.take(page * pageSize)
 
-    // Use Column with weights to ensure button stays at bottom
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Task Input and Upcoming Tasks take available space
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -376,7 +375,6 @@ fun TaskManagerContent(
             )
         }
 
-        // View Completed Tasks Button stays at bottom
         OutlinedButton(
             onClick = { showCompletedTasksDialog = true },
             modifier = Modifier
@@ -656,7 +654,7 @@ fun UpcomingTasksSection(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f), // Takes available space but respects parent constraints
+                    .weight(1f),
                 state = lazyListState,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -753,8 +751,7 @@ fun TaskCard(
     var offsetX by remember { mutableStateOf(0f) }
     val timeLeft = calculateTimeLeft(task.dueTime)
 
-    // Swipe gesture handling
-    val swipeThreshold = 150f // Pixels to trigger swipe action
+    val swipeThreshold = 150f
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1078,7 +1075,6 @@ fun CompletedTasksDialog(
         modifier = Modifier.padding(16.dp)
     )
 }
-
 
 @Composable
 fun CompletedTaskItem(
