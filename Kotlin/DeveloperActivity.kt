@@ -2,7 +2,6 @@ package com.example.myacademate
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -72,12 +71,7 @@ class DeveloperActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         super.onBackPressed()
-        if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
-            finishAffinity()
-        } else {
-            Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
-        }
-        backPressedTime = System.currentTimeMillis()
+        overridePendingTransition(R.anim.slide_in_left, R.anim.slide_out_right)
     }
 }
 
