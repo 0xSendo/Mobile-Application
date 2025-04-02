@@ -79,7 +79,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 class HomeActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels()
     private val expenseViewModel: ExpenseViewModel by viewModels {
@@ -114,7 +113,6 @@ class HomeActivity : ComponentActivity() {
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
             finishAffinity()
         } else {
@@ -201,7 +199,7 @@ fun HomeScreen(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(280.dp), // Slightly wider for better spacing
+                modifier = Modifier.width(280.dp),
                 drawerContainerColor = Color(0xFF1B1B1B),
                 drawerContentColor = Color.Transparent
             ) {
@@ -215,7 +213,6 @@ fun HomeScreen(
                         )
                         .padding(16.dp)
                 ) {
-                    // Header with gradient background
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -247,20 +244,22 @@ fun HomeScreen(
                     Spacer(Modifier.height(24.dp))
 
                     val navItems = listOf(
-                        Pair("Home", R.drawable.ic_home) to {
-                            context.startActivity(Intent(context, HomeActivity::class.java).putExtra("USERNAME", username))
-                        },
+                        Pair("Home", R.drawable.ic_home) to {},
                         Pair("Tasks", R.drawable.ic_tasks) to {
                             context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                         },
                         Pair("Progress", R.drawable.ic_progress) to {
+                            context.startActivity(Intent(context, ProgressTrackerActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                         },
                         Pair("Pomodoro", R.drawable.ic_pomodoro) to {
                             context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                         },
-
                         Pair("Expense", R.drawable.ic_calendar) to {
                             context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                            (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                         }
                     )
 
@@ -334,7 +333,6 @@ fun HomeScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Profile Section
                 item {
                     Card(
                         modifier = Modifier
@@ -349,6 +347,7 @@ fun HomeScreen(
                                     putExtra("YEAR_LEVEL", yearLevel)
                                 }
                                 context.startActivity(intent)
+                                (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                             },
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
@@ -385,7 +384,7 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Welcome, $firstName $lastName!",
+                                    text = "$firstName $lastName",
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                     color = Color(0xFFFFFFFF)
                                 )
@@ -410,7 +409,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Search Bar
                 item {
                     OutlinedTextField(
                         value = searchQuery,
@@ -437,7 +435,6 @@ fun HomeScreen(
                     )
                 }
 
-                // Today Section
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -475,7 +472,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Task Manager
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -504,7 +500,7 @@ fun HomeScreen(
                                         color = Color(0xFFFFFFFF)
                                     )
                                     Text(
-                                        text = "Due: ${latestTask.dueTime}", // Using raw dueTime
+                                        text = "Due: ${latestTask.dueTime}",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = Color(0xFF808080)
                                     )
@@ -590,7 +586,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Expense Tracker
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -710,7 +705,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Progress Snapshot
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -758,7 +752,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Games Section
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -826,7 +819,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Quick Actions
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -856,7 +848,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Recent Activity
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -896,7 +887,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Study Tips
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -920,7 +910,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Motivational Quote
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -945,7 +934,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Spacer at the bottom
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -953,6 +941,7 @@ fun HomeScreen(
         }
     }
 }
+
 @Composable
 fun GameCard(title: String, onClick: () -> Unit) {
     Card(
