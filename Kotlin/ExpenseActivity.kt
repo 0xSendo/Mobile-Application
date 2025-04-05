@@ -103,11 +103,6 @@ class ExpenseActivity : ComponentActivity() {
         }
         backPressedTime = System.currentTimeMillis()
     }
-
-    private fun startActivityWithAnimation(intent: Intent) {
-        startActivity(intent)
-        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-    }
 }
 
 enum class ExpenseFilterOption {
@@ -190,9 +185,7 @@ fun ExpenseTrackerScreen(expenseViewModel: ExpenseViewModel, username: String, c
                             (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                             scope.launch { drawerState.close() }
                         },
-                        Pair("Expense", R.drawable.ic_calendar) to {
-
-                        }
+                        Pair("Expense", R.drawable.ic_calendar) to {}
                     )
 
                     navItems.forEach { (pair, action) ->
@@ -304,7 +297,7 @@ fun ExpenseContent(expenseViewModel: ExpenseViewModel, username: String, padding
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Expense Tracker",
+                            text = "Track your expenses",
                             fontSize = 30.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color(0xFFFFA31A),
