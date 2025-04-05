@@ -25,8 +25,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -56,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -67,7 +71,7 @@ import kotlinx.coroutines.launch
 class ProgressTrackerActivity : ComponentActivity() {
     private val taskViewModel: TaskViewModel by viewModels()
     private var backPressedTime: Long = 0
-    private val BACK_PRESS_INTERVAL = 2000L // 2 seconds interval
+    private val BACK_PRESS_INTERVAL = 2000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,7 +90,7 @@ class ProgressTrackerActivity : ComponentActivity() {
 
     override fun onBackPressed() {
         if (backPressedTime + BACK_PRESS_INTERVAL > System.currentTimeMillis()) {
-            finishAffinity() // Close all activities and exit app
+            finishAffinity()
         } else {
             Toast.makeText(this, "Press back again to exit the app", Toast.LENGTH_SHORT).show()
         }
@@ -105,7 +109,7 @@ fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String, contex
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(280.dp), // Slightly wider for better spacing
+                modifier = Modifier.width(280.dp),
                 drawerContainerColor = Color(0xFF1B1B1B),
                 drawerContentColor = Color.Transparent
             ) {
@@ -119,15 +123,12 @@ fun ProgressTrackerScreen(taskViewModel: TaskViewModel, username: String, contex
                         )
                         .padding(16.dp)
                 ) {
-                    // Header with gradient background
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Transparent
-                        ),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                         elevation = CardDefaults.cardElevation(0.dp)
                     ) {
                         Box(
@@ -263,6 +264,10 @@ fun ProgressTrackerContent(taskViewModel: TaskViewModel, username: String, paddi
     val taskList: List<DatabaseHelper.Task> = taskViewModel.taskList
     var filterOption by remember { mutableStateOf(FilterOption.ALPHABETICAL) }
 
+    val notStartedCount = taskList.count { it.completionPercentage == 0 }
+    val inProgressCount = taskList.count { it.completionPercentage > 0 && it.completionPercentage < 100 }
+    val completedCount = taskList.count { it.completionPercentage == 100 }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -271,16 +276,18 @@ fun ProgressTrackerContent(taskViewModel: TaskViewModel, username: String, paddi
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(
-                text = "Progress Tracker",
-                style = androidx.compose.material3.Typography().titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp
-                ),
-                color = Color(0xFFFFFFFF),
-                modifier = Modifier.padding(top = 16.dp)
-            )
+
             Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        item {
+            SummaryCard(
+                totalTasks = taskList.size,
+                notStartedCount = notStartedCount,
+                inProgressCount = inProgressCount,
+                completedCount = completedCount
+            )
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         item {
@@ -293,7 +300,7 @@ fun ProgressTrackerContent(taskViewModel: TaskViewModel, username: String, paddi
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Filter Tasks",
-                        style = androidx.compose.material3.Typography().bodyMedium.copy(
+                        style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         ),
@@ -312,7 +319,7 @@ fun ProgressTrackerContent(taskViewModel: TaskViewModel, username: String, paddi
         item {
             Text(
                 text = "Progress List",
-                style = androidx.compose.material3.Typography().bodyMedium.copy(
+                style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 ),
@@ -341,7 +348,7 @@ fun ProgressTrackerContent(taskViewModel: TaskViewModel, username: String, paddi
                 ) {
                     Text(
                         text = "No tasks available",
-                        style = androidx.compose.material3.Typography().bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF808080),
                         modifier = Modifier.padding(16.dp)
                     )
@@ -351,12 +358,48 @@ fun ProgressTrackerContent(taskViewModel: TaskViewModel, username: String, paddi
     }
 }
 
+@Composable
+fun SummaryCard(totalTasks: Int, notStartedCount: Int, inProgressCount: Int, completedCount: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B1B1B)),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Total Tasks: $totalTasks",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SummaryText("Not Started: $notStartedCount", Color.Red)
+                SummaryText("In Progress: $inProgressCount", Color.Yellow)
+                SummaryText("Completed: $completedCount", Color.Green)
+            }
+        }
+    }
+}
+
+@Composable
+fun SummaryText(text: String, color: Color) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = color,
+        modifier = Modifier.padding(horizontal = 8.dp)
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterSection(
-    filterOption: FilterOption,
-    onFilterSelected: (FilterOption) -> Unit
-) {
+fun FilterSection(filterOption: FilterOption, onFilterSelected: (FilterOption) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -365,8 +408,15 @@ fun FilterSection(
             selected = filterOption == FilterOption.ALPHABETICAL,
             onClick = { onFilterSelected(FilterOption.ALPHABETICAL) },
             label = { Text("A-Z", color = if (filterOption == FilterOption.ALPHABETICAL) Color(0xFFFFA31A) else Color(0xFFFFFFFF)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Sort,
+                    contentDescription = null,
+                    tint = if (filterOption == FilterOption.ALPHABETICAL) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                )
+            },
             modifier = Modifier.weight(1f),
-            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            colors = FilterChipDefaults.filterChipColors(
                 containerColor = Color(0xFF808080),
                 selectedContainerColor = Color(0xFF1B1B1B)
             )
@@ -375,8 +425,15 @@ fun FilterSection(
             selected = filterOption == FilterOption.FARTHEST_DEADLINE,
             onClick = { onFilterSelected(FilterOption.FARTHEST_DEADLINE) },
             label = { Text("Farthest", color = if (filterOption == FilterOption.FARTHEST_DEADLINE) Color(0xFFFFA31A) else Color(0xFFFFFFFF)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Sort,
+                    contentDescription = null,
+                    tint = if (filterOption == FilterOption.FARTHEST_DEADLINE) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                )
+            },
             modifier = Modifier.weight(1f),
-            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            colors = FilterChipDefaults.filterChipColors(
                 containerColor = Color(0xFF808080),
                 selectedContainerColor = Color(0xFF1B1B1B)
             )
@@ -385,8 +442,15 @@ fun FilterSection(
             selected = filterOption == FilterOption.CLOSEST_DEADLINE,
             onClick = { onFilterSelected(FilterOption.CLOSEST_DEADLINE) },
             label = { Text("Closest", color = if (filterOption == FilterOption.CLOSEST_DEADLINE) Color(0xFFFFA31A) else Color(0xFFFFFFFF)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Sort,
+                    contentDescription = null,
+                    tint = if (filterOption == FilterOption.CLOSEST_DEADLINE) Color(0xFFFFA31A) else Color(0xFFFFFFFF)
+                )
+            },
             modifier = Modifier.weight(1f),
-            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            colors = FilterChipDefaults.filterChipColors(
                 containerColor = Color(0xFF808080),
                 selectedContainerColor = Color(0xFF1B1B1B)
             )
@@ -402,13 +466,7 @@ enum class FilterOption {
 
 @Composable
 fun ProgressCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel) {
-    val progressStatus = when (task.completionPercentage) {
-        in 0..24 -> "Not Started"
-        in 25..49 -> "Started"
-        in 50..74 -> "In Progress"
-        in 75..99 -> "Almost Done"
-        else -> "Completed"
-    }
+    val status = getProgressStatus(task.completionPercentage)
 
     Card(
         modifier = Modifier
@@ -419,108 +477,119 @@ fun ProgressCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Task: ${task.subjectName}",
-                style = androidx.compose.material3.Typography().bodyLarge.copy(fontWeight = FontWeight.Medium),
-                color = Color(0xFFFFFFFF)
-            )
-            Text(
-                text = "Status: $progressStatus",
-                style = androidx.compose.material3.Typography().bodyMedium,
-                color = Color(0xFF808080)
-            )
-            Text(
-                text = "Course: ${task.courseCode}",
-                style = androidx.compose.material3.Typography().bodyMedium,
-                color = Color(0xFF808080)
-            )
-            Text(
-                text = "Due: ${task.dueTime}",
-                style = androidx.compose.material3.Typography().bodyMedium,
-                color = Color(0xFF808080)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
+            Row {
+                Icon(
+                    imageVector = Icons.Default.Assignment,
+                    contentDescription = "Task",
+                    tint = Color(0xFFFFA31A),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = task.subjectName,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                        color = Color(0xFFFFFFFF)
+                    )
+                    Text(
+                        text = "Course: ${task.courseCode}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF808080)
+                    )
+                    Text(
+                        text = "Due: ${task.dueTime}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF808080)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = task.completionPercentage / 100f,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
-                color = Color(0xFFFFA31A),
+                color = status.color,
                 trackColor = Color(0xFF808080)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Status: ${status.text}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = status.color
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Button(
-                    onClick = { taskViewModel.updateTaskCompletion(task.id, 25) },
-                    enabled = task.completionPercentage < 25,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A),
-                        contentColor = Color(0xFFFFFFFF),
-                        disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
-                    )
+            if (task.completionPercentage < 100) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text("25%", fontSize = 14.sp)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = { taskViewModel.updateTaskCompletion(task.id, 50) },
-                    enabled = task.completionPercentage < 50,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A),
-                        contentColor = Color(0xFFFFFFFF),
-                        disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
-                    )
-                ) {
-                    Text("50%", fontSize = 14.sp)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = { taskViewModel.updateTaskCompletion(task.id, 75) },
-                    enabled = task.completionPercentage < 75,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A),
-                        contentColor = Color(0xFFFFFFFF),
-                        disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
-                    )
-                ) {
-                    Text("75%", fontSize = 14.sp)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = { taskViewModel.updateTaskCompletion(task.id, 100) },
-                    enabled = task.completionPercentage < 100,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFA31A),
-                        contentColor = Color(0xFFFFFFFF),
-                        disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
-                    )
-                ) {
-                    Text("100%", fontSize = 14.sp)
+                    Button(
+                        onClick = { taskViewModel.updateTaskCompletion(task.id, 25) },
+                        enabled = task.completionPercentage < 25,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFA31A),
+                            contentColor = Color(0xFFFFFFFF),
+                            disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Text("25%", fontSize = 14.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { taskViewModel.updateTaskCompletion(task.id, 50) },
+                        enabled = task.completionPercentage < 50,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFA31A),
+                            contentColor = Color(0xFFFFFFFF),
+                            disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Text("50%", fontSize = 14.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { taskViewModel.updateTaskCompletion(task.id, 75) },
+                        enabled = task.completionPercentage < 75,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFA31A),
+                            contentColor = Color(0xFFFFFFFF),
+                            disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Text("75%", fontSize = 14.sp)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { taskViewModel.updateTaskCompletion(task.id, 100) },
+                        enabled = task.completionPercentage < 100,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFA31A),
+                            contentColor = Color(0xFFFFFFFF),
+                            disabledContainerColor = Color(0xFF808080).copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Text("100%", fontSize = 14.sp)
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             if (task.completionPercentage == 100 && !task.isDone) {
                 Button(
@@ -541,7 +610,7 @@ fun ProgressCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel) {
             if (task.isDone) {
                 Text(
                     text = "Task Completed!",
-                    style = androidx.compose.material3.Typography().bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                     color = Color(0xFFFFA31A),
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
@@ -549,6 +618,18 @@ fun ProgressCard(task: DatabaseHelper.Task, taskViewModel: TaskViewModel) {
                 )
             }
         }
+    }
+}
+
+data class ProgressStatus(val text: String, val color: Color)
+
+fun getProgressStatus(percentage: Int): ProgressStatus {
+    return when {
+        percentage == 0 -> ProgressStatus("Not Started", Color.Red)
+        percentage < 50 -> ProgressStatus("Started", Color(0xFFFFA500)) // Orange
+        percentage < 75 -> ProgressStatus("In Progress", Color.Yellow)
+        percentage < 100 -> ProgressStatus("Almost Done", Color(0xFF90EE90)) // Light Green
+        else -> ProgressStatus("Completed", Color.Green)
     }
 }
 
@@ -561,5 +642,6 @@ fun ProgressTrackerScreenPreview() {
             addTask(DatabaseHelper.Task(2, "Science Project", "SCI202", "2023-11-15", completionPercentage = 50))
             addTask(DatabaseHelper.Task(3, "History Essay", "HIST303", "2023-10-30", completionPercentage = 100, isDone = true))
         }
+        ProgressTrackerScreen(previewViewModel, "previewUser", LocalContext.current)
     }
 }
