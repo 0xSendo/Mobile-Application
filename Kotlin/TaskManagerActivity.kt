@@ -159,11 +159,9 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: C
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.Transparent
-                        ),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                         elevation = CardDefaults.cardElevation(0.dp)
                     ) {
                         Box(
@@ -217,9 +215,7 @@ fun TaskManagerScreen(taskViewModel: TaskViewModel, username: String, context: C
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
-                                .clickable {
-                                    action()
-                                },
+                                .clickable { action() },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isHighlighted) Color(0xFFFFA31A).copy(alpha = 0.1f) else Color.Transparent
@@ -635,12 +631,19 @@ fun UpcomingTasksSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Upcoming Tasks (${paginatedTasks.size})",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+            Column {
+                Text(
+                    text = "Upcoming Tasks (${paginatedTasks.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Sorted by: ${currentSorting.name.replace("([A-Z])".toRegex(), " $1").trim()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFB0B0B0)
+                )
+            }
             IconButton(onClick = onSortClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_sort),
@@ -656,7 +659,7 @@ fun UpcomingTasksSection(
                     .fillMaxWidth()
                     .weight(1f),
                 state = lazyListState,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(paginatedTasks, key = { it.id }) { task ->
                     var isVisible by remember { mutableStateOf(true) }
@@ -711,20 +714,20 @@ fun UpcomingTasksSection(
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
             ) {
-                Row(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .padding(24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_tasks),
                         contentDescription = null,
                         tint = Color(0xFFB0B0B0),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(48.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "No upcoming tasks yet.\nAdd one above!",
                         style = MaterialTheme.typography.bodyLarge,
