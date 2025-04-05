@@ -839,9 +839,11 @@ fun HomeScreen(
                             ) {
                                 QuickActionButton("Add Task") {
                                     context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                                    (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                                 }.run { Modifier.weight(1f) }
                                 QuickActionButton("Add Expense") {
                                     context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                                    (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
                                 }.run { Modifier.weight(1f) }
                             }
                         }
