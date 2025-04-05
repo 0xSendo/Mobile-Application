@@ -133,10 +133,14 @@ class ExpenseViewModelFactory(private val application: Application) : ViewModelP
 }
 
 @Composable
-fun QuickActionButton(text: String, onClick: () -> Unit) {
+fun QuickActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Button(
         onClick = onClick,
-        modifier = Modifier.height(48.dp),
+        modifier = modifier.height(48.dp),
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFFFFA31A),
@@ -216,7 +220,7 @@ fun HomeScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color.Transparent
@@ -837,14 +841,30 @@ fun HomeScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                QuickActionButton("Add Task") {
-                                    context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
-                                    (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-                                }.run { Modifier.weight(1f) }
-                                QuickActionButton("Add Expense") {
-                                    context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
-                                    (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
-                                }.run { Modifier.weight(1f) }
+                                QuickActionButton(
+                                    text = "Add Task",
+                                    onClick = {
+                                        context.startActivity(Intent(context, TaskManagerActivity::class.java).putExtra("USERNAME", username))
+                                        (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                QuickActionButton(
+                                    text = "Add Expense",
+                                    onClick = {
+                                        context.startActivity(Intent(context, ExpenseActivity::class.java).putExtra("USERNAME", username))
+                                        (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                QuickActionButton(
+                                    text = "Start Pomodoro",
+                                    onClick = {
+                                        context.startActivity(Intent(context, PomodoroActivity::class.java).putExtra("USERNAME", username))
+                                        (context as? ComponentActivity)?.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                         }
                     }
